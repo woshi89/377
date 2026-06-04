@@ -21,7 +21,7 @@ echo ">>> 4. 创建虚拟环境并安装依赖"
 cd /home/ride-site
 python3 -m venv venv
 source venv/bin/activate
-pip install flask gunicorn
+pip install -r requirements.txt
 deactivate
 
 echo ">>> 5. 配置 systemd 服务（开机自启）"
