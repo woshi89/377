@@ -1,0 +1,1256 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>骑行中心 - 我的骑行日记</title>
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+    />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      :root {
+        --primary-green: #2d5a3d;
+        --secondary-green: #4a7c59;
+        --light-green: #e8f5ec;
+        --white: #ffffff;
+        --text-gray: #666666;
+        --text-dark: #333333;
+        --mint-green: #a5d6a7;
+        --cream: #fafafa;
+        --text-orange: #b8860b;
+        --shadow: 0 2px 12px rgba(45, 90, 61, 0.1);
+        --shadow-hover: 0 4px 20px rgba(45, 90, 61, 0.15);
+      }
+
+      body {
+        font-family: "Noto Sans SC", sans-serif;
+        background: linear-gradient(180deg, #e8f5e9 0%, #f5f5f5 100%);
+        min-height: 100vh;
+        padding: 15px;
+        padding-bottom: 100px;
+      }
+
+      .card {
+        background: var(--white);
+        border-radius: 16px;
+        box-shadow: var(--shadow);
+        padding: 20px;
+        margin-bottom: 25px;
+        transition: all 0.3s ease;
+      }
+
+      .card:hover {
+        box-shadow: var(--shadow-hover);
+      }
+
+      /* 顶部欢迎区 */
+      .welcome-card {
+        background: linear-gradient(
+          135deg,
+          #e8f5e9 0%,
+          #f1f8e9 50%,
+          #f5f5f5 100%
+        );
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 15px;
+        padding: 25px;
+        border-radius: 20px;
+      }
+
+      .avatar {
+        width: 80px;
+        height: 80px;
+        border-radius: 50%;
+        background: linear-gradient(
+          135deg,
+          var(--primary-green),
+          var(--secondary-green)
+        );
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+        box-shadow: 0 4px 12px rgba(45, 90, 61, 0.2);
+      }
+
+      .avatar i {
+        font-size: 36px;
+        color: white;
+      }
+
+      .welcome-content {
+        flex: 1;
+        min-width: 200px;
+      }
+
+      .welcome-content h1 {
+        color: var(--primary-green);
+        font-size: 1.7rem;
+        font-weight: 700;
+        margin-bottom: 5px;
+      }
+
+      .welcome-content .motto {
+        color: var(--secondary-green);
+        font-size: 0.9rem;
+        margin-bottom: 12px;
+      }
+
+      .countdown-badge {
+        display: inline-flex;
+        background: linear-gradient(
+          135deg,
+          var(--primary-green),
+          var(--secondary-green)
+        );
+        padding: 8px 20px;
+        border-radius: 25px;
+        color: white;
+        font-size: 0.9rem;
+        font-weight: 600;
+        box-shadow: 0 3px 10px rgba(45, 90, 61, 0.25);
+      }
+
+      .countdown-badge .number {
+        color: #ffd700;
+        font-size: 1.3rem;
+        font-weight: 700;
+        margin: 0 3px;
+      }
+
+      /* 统计卡片网格 */
+      .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 12px;
+        margin-bottom: 25px;
+      }
+
+      .stat-card {
+        background: var(--white);
+        border-radius: 14px;
+        padding: 20px;
+        text-align: center;
+        transition: all 0.3s ease;
+        cursor: pointer;
+      }
+
+      .stat-card:hover {
+        transform: translateY(-3px);
+        box-shadow: var(--shadow-hover);
+      }
+
+      .stat-card.clickable {
+        position: relative;
+      }
+
+      .stat-card.clickable:hover {
+        background: var(--light-green);
+      }
+
+      .stat-arrow {
+        position: absolute;
+        top: 10px;
+        right: 10px;
+        color: var(--secondary-green);
+        opacity: 0;
+        transition: opacity 0.3s ease;
+      }
+
+      .stat-card.clickable:hover .stat-arrow {
+        opacity: 1;
+      }
+
+      .stat-value {
+        font-size: 2.5rem;
+        font-weight: 700;
+        color: var(--primary-green);
+        margin-bottom: 5px;
+      }
+
+      .stat-label {
+        color: var(--text-gray);
+        font-size: 0.85rem;
+        margin-bottom: 6px;
+      }
+
+      .stat-source {
+        font-size: 0.75rem;
+        color: var(--text-orange);
+      }
+
+      /* 代办事项 */
+      .capability-section {
+        padding: 20px;
+      }
+
+      .section-title {
+        font-size: 1.25rem;
+        font-weight: 600;
+        color: var(--primary-green);
+        margin-bottom: 20px;
+        display: flex;
+        align-items: center;
+      }
+
+      .section-title i {
+        margin-right: 8px;
+        font-size: 1.1em;
+      }
+
+      .todo-list {
+        list-style: none;
+      }
+
+      .todo-item {
+        display: flex;
+        align-items: center;
+        padding: 12px 16px;
+        background: var(--light-green);
+        border-radius: 10px;
+        margin-bottom: 10px;
+        transition: all 0.3s ease;
+      }
+
+      .todo-item:hover {
+        background: var(--mint-green);
+      }
+
+      .todo-item i {
+        margin-right: 12px;
+        color: var(--secondary-green);
+        font-size: 1.1rem;
+      }
+
+      .todo-item .completed {
+        text-decoration: line-through;
+        color: var(--text-gray);
+      }
+
+      /* 快捷功能区 */
+      .features-grid {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 15px;
+      }
+
+      .feature-card {
+        background: var(--light-green);
+        padding: 20px;
+        border-radius: 12px;
+        text-align: center;
+        cursor: pointer;
+        transition: all 0.3s ease;
+      }
+
+      .feature-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 4px 15px rgba(45, 90, 61, 0.2);
+      }
+
+      .feature-icon {
+        width: 50px;
+        height: 50px;
+        margin: 0 auto 12px;
+        border-radius: 12px;
+        background: linear-gradient(
+          135deg,
+          var(--primary-green),
+          var(--secondary-green)
+        );
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-size: 1.3rem;
+      }
+
+      .feature-name {
+        font-weight: 600;
+        color: var(--text-dark);
+        margin-bottom: 4px;
+      }
+
+      .feature-desc {
+        font-size: 0.8rem;
+        color: var(--text-gray);
+      }
+
+      /* 快捷操作区 */
+      .action-section {
+        padding: 20px;
+      }
+
+      .action-buttons {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 12px;
+      }
+
+      .action-btn {
+        padding: 16px;
+        border: none;
+        border-radius: 12px;
+        font-size: 1rem;
+        font-weight: 600;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        transition: all 0.3s ease;
+      }
+
+      .action-btn.primary {
+        background: linear-gradient(
+          135deg,
+          var(--primary-green),
+          var(--secondary-green)
+        );
+        color: white;
+      }
+
+      .action-btn.secondary {
+        background: linear-gradient(135deg, #8b7355, #a68856);
+        color: white;
+      }
+
+      .action-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 4px 15px rgba(45, 90, 61, 0.25);
+        }
+
+        /* 骑行记录列表 */
+        .section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .section-actions {
+            display: flex;
+            gap: 10px;
+        }
+
+        .edit-toggle-btn {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            padding: 8px 16px;
+            border: 2px solid var(--secondary-green);
+            background: white;
+            color: var(--secondary-green);
+            border-radius: 20px;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .edit-toggle-btn:hover,
+        .edit-toggle-btn.active {
+            background: var(--secondary-green);
+            color: white;
+        }
+
+        .ride-records-list {
+            margin-bottom: 15px;
+        }
+
+        .ride-record-item {
+            display: flex;
+            align-items: center;
+            padding: 15px;
+            background: var(--light-green);
+            border-radius: 12px;
+            margin-bottom: 10px;
+            transition: all 0.3s ease;
+        }
+
+        .ride-record-item:hover {
+            background: var(--mint-green);
+        }
+
+        .ride-record-item.editing {
+            background: #fff3e0;
+            border: 2px solid #ff9800;
+        }
+
+        .record-date {
+            font-weight: 600;
+            color: var(--primary-green);
+            min-width: 100px;
+            margin-right: 15px;
+        }
+
+        .record-info {
+            flex: 1;
+        }
+
+        .record-distance {
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: var(--primary-green);
+        }
+
+        .record-speed {
+            font-size: 0.85rem;
+            color: var(--text-gray);
+            margin-left: 10px;
+        }
+
+        .record-note {
+            font-size: 0.85rem;
+            color: var(--text-gray);
+            margin-top: 4px;
+        }
+
+        .record-actions {
+            display: flex;
+            gap: 8px;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .ride-record-item:hover .record-actions,
+        .edit-mode .record-actions {
+            opacity: 1;
+        }
+
+        .record-action-btn {
+            width: 36px;
+            height: 36px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+        }
+
+        .record-action-btn.edit {
+            background: #2196f3;
+            color: white;
+        }
+
+        .record-action-btn.delete {
+            background: #f44336;
+            color: white;
+        }
+
+        .record-action-btn:hover {
+            transform: scale(1.1);
+        }
+
+        .add-record-btn {
+            width: 100%;
+            padding: 14px;
+            border: 2px dashed var(--secondary-green);
+            background: transparent;
+            color: var(--secondary-green);
+            border-radius: 12px;
+            font-size: 0.95rem;
+            font-weight: 500;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            transition: all 0.3s ease;
+        }
+
+        .add-record-btn:hover {
+            background: var(--light-green);
+        }
+
+        .loading {
+            text-align: center;
+            color: var(--text-gray);
+            padding: 20px;
+        }
+
+        .empty-state {
+            text-align: center;
+            color: var(--text-gray);
+            padding: 30px;
+        }
+
+        /* 模态框 */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s ease;
+        }
+
+        .modal-overlay.show {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .modal {
+            background: white;
+            border-radius: 20px;
+            padding: 25px;
+            width: 90%;
+            max-width: 400px;
+            transform: scale(0.9);
+            transition: transform 0.3s ease;
+        }
+
+        .modal-overlay.show .modal {
+            transform: scale(1);
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .modal-title {
+            font-size: 1.3rem;
+            font-weight: 600;
+            color: var(--primary-green);
+        }
+
+        .modal-close {
+            width: 32px;
+            height: 32px;
+            border: none;
+            background: #eee;
+            border-radius: 50%;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1rem;
+            color: var(--text-gray);
+        }
+
+        .modal-close:hover {
+            background: #ddd;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        .form-group label {
+            display: block;
+            font-size: 0.9rem;
+            font-weight: 500;
+            color: var(--text-dark);
+            margin-bottom: 6px;
+        }
+
+        .form-group input,
+        .form-group textarea {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #eee;
+            border-radius: 10px;
+            font-size: 1rem;
+            font-family: inherit;
+            transition: border-color 0.3s ease;
+        }
+
+        .form-group input:focus,
+        .form-group textarea:focus {
+            outline: none;
+            border-color: var(--secondary-green);
+        }
+
+        .form-group textarea {
+            resize: vertical;
+            min-height: 80px;
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+
+        .modal-actions {
+            display: flex;
+            gap: 12px;
+            margin-top: 25px;
+        }
+
+        .modal-btn {
+            flex: 1;
+            padding: 12px;
+            border: none;
+            border-radius: 10px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .modal-btn.cancel {
+            background: #eee;
+            color: var(--text-gray);
+        }
+
+        .modal-btn.cancel:hover {
+            background: #ddd;
+        }
+
+        .modal-btn.confirm {
+            background: linear-gradient(135deg, var(--primary-green), var(--secondary-green));
+            color: white;
+        }
+
+        .modal-btn.confirm:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(45, 90, 61, 0.3);
+        }
+
+        /* 删除确认模态框 */
+        .delete-confirm-modal {
+            text-align: center;
+        }
+
+        .delete-warning {
+            font-size: 1.5rem;
+            margin-bottom: 15px;
+        }
+
+        .delete-message {
+            color: var(--text-gray);
+            margin-bottom: 25px;
+        }
+
+        /* 页面底部 */
+      .footer {
+        text-align: center;
+        padding: 20px;
+        color: var(--text-gray);
+        font-size: 0.9rem;
+      }
+
+      .footer-signature {
+        font-style: italic;
+        color: var(--secondary-green);
+      }
+
+      /* 响应式调整 */
+      @media (max-width: 600px) {
+        body {
+          padding: 10px;
+        }
+
+        .welcome-card {
+          padding: 20px;
+        }
+
+        .avatar {
+          width: 65px;
+          height: 65px;
+        }
+
+        .avatar i {
+          font-size: 28px;
+        }
+
+        .welcome-content h1 {
+          font-size: 1.4rem;
+        }
+
+        .stats-grid {
+          grid-template-columns: repeat(2, 1fr);
+        }
+
+        .stat-value {
+          font-size: 2rem;
+        }
+      }
+
+      @media (min-width: 768px) {
+        .stats-grid {
+          grid-template-columns: repeat(4, 1fr);
+        }
+      }
+
+      /* 底部导航栏 */
+      .bottom-nav {
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        display: flex;
+        background: var(--white);
+        border-radius: 20px 20px 0 0;
+        box-shadow: 0 -4px 20px rgba(45, 90, 61, 0.12);
+        padding: 8px 15px;
+        padding-bottom: calc(8px + env(safe-area-inset-bottom));
+        z-index: 100;
+        justify-content: space-around;
+      }
+
+      .nav-item {
+        flex: 1;
+        max-width: 90px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        padding: 10px 8px;
+        border-radius: 14px;
+        cursor: pointer;
+        color: var(--text-gray);
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        position: relative;
+      }
+
+      .nav-item:hover {
+        background: rgba(74, 124, 89, 0.08);
+        color: var(--secondary-green);
+        transform: translateY(-2px);
+      }
+
+      .nav-item.active {
+        background: linear-gradient(
+          135deg,
+          rgba(45, 90, 61, 0.15),
+          rgba(74, 124, 89, 0.1)
+        );
+        color: var(--primary-green);
+        box-shadow: 0 4px 12px rgba(45, 90, 61, 0.15);
+      }
+
+      .nav-item.active::before {
+        content: "";
+        position: absolute;
+        top: -4px;
+        width: 6px;
+        height: 6px;
+        background: var(--primary-green);
+        border-radius: 50%;
+        animation: pulse 2s ease-in-out infinite;
+      }
+
+      @keyframes pulse {
+        0%,
+        100% {
+          box-shadow: 0 0 0 0 rgba(45, 90, 61, 0.4);
+        }
+        50% {
+          box-shadow: 0 0 0 6px rgba(45, 90, 61, 0);
+        }
+      }
+
+      .nav-item i {
+        font-size: 1.4rem;
+        margin-bottom: 5px;
+        transition: transform 0.3s ease;
+      }
+
+      .nav-item:hover i,
+      .nav-item.active i {
+        transform: scale(1.1);
+      }
+
+      .nav-item span {
+        font-size: 0.72rem;
+        font-weight: 500;
+        letter-spacing: 0.3px;
+      }
+
+      @media (min-width: 1024px) {
+        body {
+          max-width: 1200px;
+          margin: 0 auto;
+          padding: 20px;
+        }
+
+        .bottom-nav {
+          position: static;
+          margin-top: 20px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <!-- 顶部欢迎区 -->
+    <div class="welcome-card">
+      <div class="avatar">
+        <i class="fas fa-bicycle"></i>
+      </div>
+      <div class="welcome-content">
+        <h1>一禄的骑行日记</h1>
+        <p class="motto">每一次踩踏，都是自由的宣告。</p>
+        <div class="countdown-badge">
+          <span
+            >骑行第 <span class="number" id="countdown-days">18</span> 天</span
+          >
+        </div>
+      </div>
+    </div>
+
+    <!-- 数据统计卡片 -->
+    <div class="stats-grid">
+      <div class="stat-card clickable" onclick="navigateToStats()">
+        <div class="stat-value" id="total-km">468</div>
+        <div class="stat-label">总里程 (km)</div>
+        <div class="stat-source">数据来自数据库</div>
+        <i class="fas fa-arrow-right stat-arrow"></i>
+      </div>
+      <div class="stat-card clickable" onclick="navigateToMap()">
+        <div class="stat-value" id="location">北京</div>
+        <div class="stat-label">所在地点</div>
+        <div class="stat-source">数据来自数据库</div>
+        <i class="fas fa-arrow-right stat-arrow"></i>
+      </div>
+      <div class="stat-card clickable" onclick="navigateToExpense()">
+        <div class="stat-value" id="total-cost">¥2,680</div>
+        <div class="stat-label">所花金额</div>
+        <div class="stat-source">数据来自数据库</div>
+        <i class="fas fa-arrow-right stat-arrow"></i>
+      </div>
+      <div class="stat-card clickable" onclick="navigateToEquipment()">
+        <div class="stat-value" id="maintenance-status">良好</div>
+        <div class="stat-label">维修检查</div>
+        <div class="stat-source">数据来自数据库</div>
+        <i class="fas fa-arrow-right stat-arrow"></i>
+      </div>
+    </div>
+
+    <!-- 代办事项 -->
+    <div class="card capability-section">
+      <h2 class="section-title">
+        <i class="fas fa-list-check"></i>
+        代办事项
+      </h2>
+      <ul class="todo-list">
+        <li class="todo-item">
+          <i class="fas fa-circle-o"></i>
+          <span>150km拉练</span>
+        </li>
+        <li class="todo-item">
+          <i class="fas fa-circle-o"></i>
+          <span>单日爬升1000m</span>
+        </li>
+        <li class="todo-item">
+          <i class="fas fa-circle-o"></i>
+          <span>更换刹车皮</span>
+        </li>
+        <li class="todo-item">
+          <i class="fas fa-circle-o"></i>
+          <span>调整变速系统</span>
+        </li>
+        <li class="todo-item">
+          <i class="fas fa-circle-o"></i>
+          <span>制定路线计划</span>
+        </li>
+        <li class="todo-item">
+          <i class="fas fa-check-circle"></i>
+          <span class="completed">撰写骑行攻略</span>
+        </li>
+      </ul>
+    </div>
+
+    <!-- 快捷功能区 -->
+    <div class="card quick-features">
+      <h2 class="section-title">
+        <i class="fas fa-rocket"></i>
+        快捷功能
+      </h2>
+      <div class="features-grid">
+        <div class="feature-card" onclick="navigateToFood()">
+          <div class="feature-icon">
+            <i class="fas fa-utensils"></i>
+          </div>
+          <div class="feature-name">食谱</div>
+          <div class="feature-desc">露营吃什么</div>
+        </div>
+        <div class="feature-card" onclick="showFeature('route')">
+          <div class="feature-icon">
+            <i class="fas fa-route"></i>
+          </div>
+          <div class="feature-name">路线规划</div>
+          <div class="feature-desc">规划骑行路线</div>
+        </div>
+        <div class="feature-card" onclick="showFeature('club')">
+          <div class="feature-icon">
+            <i class="fas fa-users"></i>
+          </div>
+          <div class="feature-name">骑行社群</div>
+          <div class="feature-desc">加入骑行队伍</div>
+        </div>
+        <div class="feature-card" onclick="showFeature('shop')">
+          <div class="feature-icon">
+            <i class="fas fa-shopping-bag"></i>
+          </div>
+          <div class="feature-name">装备商城</div>
+          <div class="feature-desc">选购骑行装备</div>
+        </div>
+        <div class="feature-card" onclick="showFeature('tips')">
+          <div class="feature-icon">
+            <i class="fas fa-lightbulb"></i>
+          </div>
+          <div class="feature-name">骑行贴士</div>
+          <div class="feature-desc">获取骑行知识</div>
+        </div>
+        <div class="feature-card" onclick="showFeature('challenge')">
+          <div class="feature-icon">
+            <i class="fas fa-trophy"></i>
+          </div>
+          <div class="feature-name">挑战活动</div>
+          <div class="feature-desc">参与骑行挑战</div>
+        </div>
+      </div>
+    </div>
+
+
+
+
+    <!-- 底部导航栏 -->
+    <div class="bottom-nav">
+      <div class="nav-item active" onclick="navigateToHome()">
+        <i class="fa-solid fa-bicycle"></i>
+        <span>骑行</span>
+      </div>
+      <div class="nav-item" onclick="navigateToFood()">
+        <i class="fa-solid fa-utensils"></i>
+        <span>美食</span>
+      </div>
+      <div class="nav-item" >
+        <i class="fa-solid fa-user"></i>
+        <span>我</span>
+      </div>
+    </div>
+
+    <!-- 页面底部 -->
+    <div class="footer">
+      <p class="footer-signature">「每一步都算数」</p>
+    </div>
+
+    <script>
+      const mockData = {
+        stats: {
+          totalKm: 468,
+          location: "北京",
+          totalCost: "¥2,680",
+          maintenanceStatus: "良好",
+        },
+        targetDate: "2026-09-01",
+      };
+
+      function updateCountdown() {
+        const target = new Date(mockData.targetDate);
+        const now = new Date();
+        const diff = target - now;
+        const days = Math.ceil(diff / (1000 * 60 * 60 * 24));
+        document.getElementById("countdown-days").textContent = Math.max(
+          0,
+          days,
+        );
+      }
+
+      function renderStats() {
+        document.getElementById("total-km").textContent =
+          mockData.stats.totalKm;
+        document.getElementById("location").textContent =
+          mockData.stats.location;
+        document.getElementById("total-cost").textContent =
+          mockData.stats.totalCost;
+        document.getElementById("maintenance-status").textContent =
+          mockData.stats.maintenanceStatus;
+      }
+
+      function navigateTo(url) {
+        alert(`即将跳转到: ${url}`);
+      }
+
+      function navigateToHome() {
+        window.location.href = "/";
+      }
+
+      function navigateToStats() {
+        window.location.href = "/ride-stats";
+      }
+
+      function navigateToExpense() {
+        window.location.href = "/expense-stats";
+      }
+
+      function navigateToMap() {
+        window.location.href = "/ride-map";
+      }
+
+      function navigateToEquipment() {
+        window.location.href = "/equipment";
+      }
+
+      function navigateToFood() {
+        window.location.href = "/food";
+      }
+
+      function showToast(message) {
+        const toast = document.createElement("div");
+        toast.style.cssText = `
+                position: fixed;
+                bottom: 120px;
+                left: 50%;
+                transform: translateX(-50%);
+                background: rgba(45, 90, 61, 0.9);
+                color: white;
+                padding: 12px 24px;
+                border-radius: 10px;
+                font-weight: 600;
+                z-index: 1000;
+                opacity: 0;
+                transition: opacity 0.3s ease;
+            `;
+        toast.textContent = message;
+        document.body.appendChild(toast);
+        setTimeout(() => (toast.style.opacity = "1"), 10);
+        setTimeout(() => {
+          toast.style.opacity = "0";
+          setTimeout(() => document.body.removeChild(toast), 300);
+        }, 2000);
+      }
+
+      function showAlert(message) {
+        alert(message);
+      }
+
+      function showFeature(feature) {
+        const features = {
+          weather: "天气查询功能开发中...",
+          route: "路线规划功能开发中...",
+          club: "骑行社群功能开发中...",
+          shop: "装备商城功能开发中...",
+          tips: "骑行贴士功能开发中...",
+          challenge: "挑战活动功能开发中...",
+        };
+        showToast(features[feature]);
+      }
+
+      let editMode = false;
+      let rideRecords = [];
+
+      function loadRideRecords() {
+        fetch('/api/ride_records')
+          .then(res => res.json())
+          .then(data => {
+            rideRecords = data;
+            renderRideRecords();
+          })
+          .catch(err => {
+            document.getElementById('ride-records-list').innerHTML = '<div class="empty-state">加载失败</div>';
+          });
+      }
+
+      function renderRideRecords() {
+        const list = document.getElementById('ride-records-list');
+        if (rideRecords.length === 0) {
+          list.innerHTML = '<div class="empty-state">暂无骑行记录</div>';
+          return;
+        }
+        list.innerHTML = rideRecords.map(record => `
+          <div class="ride-record-item" data-id="${record.id}">
+            <div class="record-date">${record.date}</div>
+            <div class="record-info">
+              <div>
+                <span class="record-distance">${record.distance} km</span>
+                <span class="record-speed">平均速度: ${record.avgSpeed} km/h</span>
+              </div>
+              ${record.note ? `<div class="record-note">${record.note}</div>` : ''}
+            </div>
+            <div class="record-actions">
+              <button class="record-action-btn edit" onclick="openEditModal(${record.id})" title="编辑">
+                <i class="fas fa-edit"></i>
+              </button>
+              <button class="record-action-btn delete" onclick="openDeleteConfirm(${record.id})" title="删除">
+                <i class="fas fa-trash"></i>
+              </button>
+            </div>
+          </div>
+        `).join('');
+      }
+
+      function toggleEditMode() {
+        editMode = !editMode;
+        const toggleBtn = document.getElementById('edit-toggle');
+        const list = document.getElementById('ride-records-list');
+        
+        if (editMode) {
+          toggleBtn.classList.add('active');
+          toggleBtn.innerHTML = '<i class="fas fa-check"></i><span>完成</span>';
+          list.classList.add('edit-mode');
+        } else {
+          toggleBtn.classList.remove('active');
+          toggleBtn.innerHTML = '<i class="fas fa-edit"></i><span>编辑</span>';
+          list.classList.remove('edit-mode');
+        }
+      }
+
+      function openAddModal() {
+        document.getElementById('modal-title').textContent = '添加骑行记录';
+        document.getElementById('record-id').value = '';
+        document.getElementById('record-date').value = '';
+        document.getElementById('record-distance').value = '';
+        document.getElementById('record-speed').value = '';
+        document.getElementById('record-note').value = '';
+        document.getElementById('add-edit-modal').classList.add('show');
+      }
+
+      function openEditModal(id) {
+        const record = rideRecords.find(r => r.id === id);
+        if (!record) return;
+        
+        document.getElementById('modal-title').textContent = '编辑骑行记录';
+        document.getElementById('record-id').value = record.id;
+        document.getElementById('record-date').value = record.date;
+        document.getElementById('record-distance').value = record.distance;
+        document.getElementById('record-speed').value = record.avgSpeed;
+        document.getElementById('record-note').value = record.note;
+        document.getElementById('add-edit-modal').classList.add('show');
+      }
+
+      function closeModal(modalId) {
+        document.getElementById(modalId).classList.remove('show');
+      }
+
+      function saveRecord() {
+        const id = document.getElementById('record-id').value;
+        const date = document.getElementById('record-date').value;
+        const distance = parseFloat(document.getElementById('record-distance').value);
+        const speed = parseFloat(document.getElementById('record-speed').value);
+        const note = document.getElementById('record-note').value;
+
+        if (!date || !distance || !speed) {
+          showToast('请填写完整信息');
+          return;
+        }
+
+        const data = { date, distance, avgSpeed: speed, note };
+        const url = id ? `/api/ride_record/${id}` : '/api/ride_record';
+        const method = id ? 'PUT' : 'POST';
+
+        fetch(url, {
+          method: method,
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(data)
+        })
+        .then(res => res.json())
+        .then(() => {
+          showToast(id ? '修改成功' : '添加成功');
+          closeModal('add-edit-modal');
+          loadRideRecords();
+        })
+        .catch(() => {
+          showToast('操作失败');
+        });
+      }
+
+      function openDeleteConfirm(id) {
+        const record = rideRecords.find(r => r.id === id);
+        if (!record) return;
+        
+        document.getElementById('delete-record-id').value = id;
+        document.getElementById('delete-record-info').textContent = `${record.date} - ${record.distance} km`;
+        document.getElementById('delete-confirm-modal').classList.add('show');
+      }
+
+      function deleteRecord() {
+        const id = document.getElementById('delete-record-id').value;
+        
+        fetch(`/api/ride_record/${id}`, {
+          method: 'DELETE'
+        })
+        .then(res => res.json())
+        .then(() => {
+          showToast('删除成功');
+          closeModal('delete-confirm-modal');
+          loadRideRecords();
+        })
+        .catch(() => {
+          showToast('删除失败');
+        });
+      }
+
+      document.addEventListener("DOMContentLoaded", () => {
+        updateCountdown();
+        renderStats();
+        loadRideRecords();
+      });
+    </script>
+
+    <!-- 添加/编辑模态框 -->
+    <div class="modal-overlay" id="add-edit-modal" onclick="closeModal('add-edit-modal')">
+      <div class="modal" onclick="event.stopPropagation()">
+        <div class="modal-header">
+          <h3 class="modal-title" id="modal-title">添加骑行记录</h3>
+          <button class="modal-close" onclick="closeModal('add-edit-modal')">
+            <i class="fas fa-times"></i>
+          </button>
+        </div>
+        <input type="hidden" id="record-id">
+        <div class="form-group">
+          <label>日期</label>
+          <input type="date" id="record-date" required>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>里程 (km)</label>
+            <input type="number" id="record-distance" step="0.1" required>
+          </div>
+          <div class="form-group">
+            <label>平均速度 (km/h)</label>
+            <input type="number" id="record-speed" step="0.1" required>
+          </div>
+        </div>
+        <div class="form-group">
+          <label>备注</label>
+          <textarea id="record-note" placeholder="添加备注..."></textarea>
+        </div>
+        <div class="modal-actions">
+          <button class="modal-btn cancel" onclick="closeModal('add-edit-modal')">取消</button>
+          <button class="modal-btn confirm" onclick="saveRecord()">保存</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 删除确认模态框 -->
+    <div class="modal-overlay" id="delete-confirm-modal" onclick="closeModal('delete-confirm-modal')">
+      <div class="modal delete-confirm-modal" onclick="event.stopPropagation()">
+        <div class="delete-warning">⚠️</div>
+        <h3 class="modal-title">确认删除</h3>
+        <p class="delete-message">确定要删除记录 <strong id="delete-record-info"></strong> 吗？</p>
+        <input type="hidden" id="delete-record-id">
+        <div class="modal-actions">
+          <button class="modal-btn cancel" onclick="closeModal('delete-confirm-modal')">取消</button>
+          <button class="modal-btn confirm" onclick="deleteRecord()" style="background: #f44336;">删除</button>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>

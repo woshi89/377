@@ -1,0 +1,478 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>骑行地图 - 永川→北京</title>
+  <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --primary-green: #2d5a3d;
+      --secondary-green: #4a7c59;
+      --light-green: #e8f5ec;
+      --white: #ffffff;
+      --text-gray: #666666;
+      --phase1: #27ae60;
+      --phase2: #2980b9;
+      --phase3: #e67e22;
+      --shadow: 0 2px 12px rgba(45, 90, 61, 0.1);
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    html, body {
+      height: 100%;
+      overflow: hidden;
+    }
+
+    body {
+      background: linear-gradient(180deg, #e8f5e9 0%, #f5f5f5 100%);
+      font-family: "Noto Sans SC", sans-serif;
+      display: flex;
+      flex-direction: column;
+      padding: 10px;
+      padding-bottom: 0;
+    }
+
+    .container {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      background: var(--white);
+      border-radius: 16px;
+      box-shadow: var(--shadow);
+      overflow: hidden;
+      margin-bottom: 10px;
+    }
+
+    .chart-wrapper {
+      flex: 1;
+      width: 100%;
+    }
+
+    .chart-inner { width: 100%; height: 100%; }
+
+    /* 底部导航 */
+    .bottom-nav {
+      flex-shrink: 0;
+      display: flex; background: var(--white);
+      border-radius: 20px 20px 0 0;
+      box-shadow: 0 -4px 20px rgba(45,90,61,0.12);
+      padding: 6px 15px;
+      padding-bottom: calc(6px + env(safe-area-inset-bottom));
+      z-index: 100;
+      justify-content: space-around;
+    }
+
+    .nav-item {
+      flex: 1; max-width: 90px;
+      display: flex; flex-direction: column;
+      align-items: center; padding: 8px 6px;
+      border-radius: 14px; cursor: pointer;
+      color: var(--text-gray); transition: all 0.3s cubic-bezier(0.4,0,0.2,1);
+      position: relative;
+      text-decoration: none;
+    }
+
+    .nav-item:hover {
+      background: rgba(74,124,89,0.08);
+      color: var(--secondary-green);
+      transform: translateY(-2px);
+    }
+
+    .nav-item.active {
+      background: linear-gradient(135deg, rgba(45,90,61,0.15), rgba(74,124,89,0.1));
+      color: var(--primary-green);
+      box-shadow: 0 4px 12px rgba(45,90,61,0.15);
+    }
+
+    .nav-item.active::before {
+      content: ''; position: absolute; top: -4px;
+      width: 6px; height: 6px; background: var(--primary-green);
+      border-radius: 50%; animation: pulseNav 2s ease-in-out infinite;
+    }
+
+    @keyframes pulseNav {
+      0%,100% { box-shadow: 0 0 0 0 rgba(45,90,61,0.4); }
+      50% { box-shadow: 0 0 0 6px rgba(45,90,61,0); }
+    }
+
+    .nav-item i { font-size: 1.4rem; margin-bottom: 5px; transition: transform 0.3s ease; }
+    .nav-item:hover i, .nav-item.active i { transform: scale(1.1); }
+    .nav-item span { font-size: 0.72rem; font-weight: 500; letter-spacing: 0.3px; }
+
+    @media (min-width: 1024px) {
+      body {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 20px;
+        padding-bottom: 0;
+      }
+      .container { margin-bottom: 20px; }
+    }
+  </style>
+</head>
+
+<body>
+  <div class="container">
+    <div class="chart-wrapper" id="chartWrapper">
+      <div class="chart-inner" id="mapChart"></div>
+    </div>
+  </div>
+
+  <!-- 底部导航栏 -->
+  <div class="bottom-nav">
+    <a class="nav-item active" href="/">
+      <i class="fa-solid fa-bicycle"></i>
+      <span>骑行</span>
+    </a>
+    <a class="nav-item" href="/food">
+      <i class="fa-solid fa-utensils"></i>
+      <span>美食</span>
+    </a>
+    <a class="nav-item" href="/equipment">
+      <i class="fa-solid fa-user"></i>
+      <span>我</span>
+    </a>
+  </div>
+
+  <script>
+    (() => {
+      // ======================== 坐标常量 ========================
+      const yongchuan = [105.90, 29.35]; const bishan = [106.20, 29.55];
+      const beibei = [106.40, 29.80]; const cizhu = [106.74, 29.98];
+      const linshui = [106.93, 30.33]; const dazhu = [107.20, 30.73];
+      const dazhou = [107.47, 31.22]; const xuanhan = [107.72, 31.35];
+      const wanyuan = [108.03, 32.07]; const guandu = [108.25, 32.30];
+      const zhenba = [107.90, 32.53]; const xixiang = [107.77, 32.98];
+      const shiquan = [108.25, 33.05]; const ningshan = [108.31, 33.31];
+      const jiangkou = [108.70, 33.73]; const guanghuojie = [108.78, 33.80];
+      const xian = [108.95, 34.27]; const lintong = [109.22, 34.37];
+      const huayin = [110.09, 34.57]; const lingbao = [110.87, 34.52];
+      const sanmenxia = [111.20, 34.77]; const mianchi = [111.76, 34.76];
+      const luoyang = [112.45, 34.62]; const gongyi = [112.98, 34.75];
+      const zhengzhou = [113.65, 34.76]; const xinxiang = [113.85, 35.30];
+      const hebi = [114.17, 35.90]; const anyang = [114.35, 36.10];
+      const handan = [114.48, 36.60]; const xingtai = [114.50, 37.07];
+      const shijiazhuang = [114.51, 38.04]; const dingzhou = [114.99, 38.51];
+      const baoding = [115.47, 38.87]; const gaobeidian = [115.87, 39.33];
+      const beijing = [116.40, 39.90];
+
+      // ======================== 每日行程数据 ========================
+      const dailyRoutes = [
+        { day: 'D1', to: '璧山', type: 'ride', phase: 1, coords: [yongchuan, bishan], dist: '55km', climb: '300m', camp: '秀湖公园附近绿地', scenery: '巴渝田园' },
+        { day: 'D2', to: '北碚', type: 'ride', phase: 1, coords: [bishan, beibei], dist: '40km', climb: '200m', camp: '嘉陵江边', scenery: '缙云山远眺' },
+        { day: 'D3', to: '茨竹', type: 'ride', phase: 1, coords: [beibei, cizhu], dist: '55km', climb: '600m', camp: '茨竹镇旅馆后院', scenery: '华蓥山余脉' },
+        { day: 'D4', to: '邻水', type: 'ride', phase: 1, coords: [cizhu, linshui], dist: '45km', climb: '400m', camp: '邻水城南超市附近', scenery: '小垭口入川' },
+        { day: 'D5', to: '大竹', type: 'ride', phase: 1, coords: [linshui, dazhu], dist: '45km', climb: '350m', camp: '护城河绿道', scenery: '竹海茶园' },
+        { day: 'D6', to: '达州', type: 'ride', phase: 1, coords: [dazhu, dazhou], dist: '70km', climb: '500m', camp: '达州市区住店', scenery: '铜锣山风光' },
+        { day: 'D7', to: '达州休整', type: 'rest', phase: 1 },
+        { day: 'D8', to: '宣汉', type: 'ride', phase: 1, coords: [dazhou, xuanhan], dist: '50km', climb: '400m', camp: '宣汉滨河路亭子', scenery: '州河峡谷' },
+        { day: 'D9', to: '万源', type: 'ride', phase: 1, coords: [xuanhan, wanyuan], dist: '65km', climb: '800m', camp: '后河桥闲置门市', scenery: '大巴山腹地' },
+        { day: 'D10', to: '官渡', type: 'ride', phase: 1, coords: [wanyuan, guandu], dist: '35km', climb: '500m', camp: '废弃加水站', scenery: '大巴山峡谷' },
+        { day: 'D11', to: '镇巴', type: 'ride', phase: 1, coords: [guandu, zhenba], dist: '65km', climb: '1000m', camp: '山水小镇广场', scenery: '大巴山主脉' },
+        { day: 'D12', to: '镇巴休整', type: 'rest', phase: 1 },
+        { day: 'D13', to: '西乡', type: 'ride', phase: 1, coords: [zhenba, xixiang], dist: '65km', climb: '600m', camp: '樱桃沟农家乐', scenery: '汉中盆地' },
+        { day: 'D14', to: '石泉', type: 'ride', phase: 1, coords: [xixiang, shiquan], dist: '60km', climb: '400m', camp: '古城东侧河滩', scenery: '汉江三峡' },
+        { day: 'D15', to: '宁陕', type: 'ride', phase: 1, coords: [shiquan, ningshan], dist: '70km', climb: '800m', camp: '城外加油站', scenery: '子午道遗迹' },
+        { day: 'D16', to: '江口', type: 'ride', phase: 1, coords: [ningshan, jiangkou], dist: '55km', climb: '1000m', camp: '镇政府院内', scenery: '平河梁' },
+        { day: 'D17', to: '广货街', type: 'ride', phase: 1, coords: [jiangkou, guanghuojie], dist: '45km', climb: '900m', camp: '骑友驿站', scenery: '月河梁' },
+        { day: 'D18', to: '西安', type: 'ride', phase: 1, coords: [guanghuojie, xian], dist: '65km', climb: '500m', camp: '钟楼青旅', scenery: '秦岭分水岭', milestone: true },
+        { day: 'D19-20', to: '西安休整', type: 'rest', phase: 2 },
+        { day: 'D21', to: '临潼', type: 'ride', phase: 2, coords: [xian, lintong], dist: '30km', climb: '-', camp: '房车营地', scenery: '骊山晚照' },
+        { day: 'D22', to: '华阴', type: 'ride', phase: 2, coords: [lintong, huayin], dist: '80km', climb: '-', camp: '生态公园附近', scenery: '远眺华山' },
+        { day: 'D23', to: '灵宝', type: 'ride', phase: 2, coords: [huayin, lingbao], dist: '70km', climb: '-', camp: '寺河山果园', scenery: '潼关黄河' },
+        { day: 'D24', to: '三门峡', type: 'ride', phase: 2, coords: [lingbao, sanmenxia], dist: '55km', climb: '-', camp: '黄河公园露营区', scenery: '三门峡大坝' },
+        { day: 'D25', to: '渑池', type: 'ride', phase: 2, coords: [sanmenxia, mianchi], dist: '65km', climb: '-', camp: '韶山森林公园', scenery: '仰韶文化' },
+        { day: 'D26', to: '洛阳', type: 'ride', phase: 2, coords: [mianchi, luoyang], dist: '70km', climb: '-', camp: '洛浦公园草坪', scenery: '龙门石窟', milestone: true },
+        { day: 'D27', to: '洛阳休整', type: 'rest', phase: 2 },
+        { day: 'D28', to: '巩义', type: 'ride', phase: 3, coords: [luoyang, gongyi], dist: '55km', climb: '-', camp: '伊洛河畔杨树林', scenery: '杜甫故里' },
+        { day: 'D29', to: '郑州', type: 'ride', phase: 3, coords: [gongyi, zhengzhou], dist: '70km', climb: '-', camp: '西流湖公园', scenery: '黄河风景区' },
+        { day: 'D30', to: '新乡', type: 'ride', phase: 3, coords: [zhengzhou, xinxiang], dist: '70km', climb: '-', camp: '卫河公园', scenery: '黄河大桥' },
+        { day: 'D31', to: '鹤壁', type: 'ride', phase: 3, coords: [xinxiang, hebi], dist: '65km', climb: '-', camp: '淇河湿地公园', scenery: '诗经文化' },
+        { day: 'D32', to: '安阳', type: 'ride', phase: 3, coords: [hebi, anyang], dist: '50km', climb: '-', camp: '洹水公园', scenery: '殷墟' },
+        { day: 'D33', to: '邯郸', type: 'ride', phase: 3, coords: [anyang, handan], dist: '70km', climb: '-', camp: '赵苑公园', scenery: '赵国都城' },
+        { day: 'D34', to: '邢台', type: 'ride', phase: 3, coords: [handan, xingtai], dist: '60km', climb: '-', camp: '七里河绿道', scenery: '邢台大峡谷' },
+        { day: 'D35', to: '石家庄', type: 'ride', phase: 3, coords: [xingtai, shijiazhuang], dist: '70km', climb: '-', camp: '汊河湿地公园', scenery: '赵州桥', milestone: true },
+        { day: 'D36', to: '石家庄休整', type: 'rest', phase: 3 },
+        { day: 'D37', to: '定州', type: 'ride', phase: 3, coords: [shijiazhuang, dingzhou], dist: '65km', climb: '-', camp: '古城外广场', scenery: '开元寺塔' },
+        { day: 'D38', to: '保定', type: 'ride', phase: 3, coords: [dingzhou, baoding], dist: '65km', climb: '-', camp: '植物园草坪', scenery: '直隶总督署' },
+        { day: 'D39', to: '高碑店', type: 'ride', phase: 3, coords: [baoding, gaobeidian], dist: '55km', climb: '-', camp: '世纪广场', scenery: '白洋淀水乡' },
+        { day: 'D40', to: '北京', type: 'ride', phase: 3, coords: [gaobeidian, beijing], dist: '70km', climb: '-', camp: '终点天安门', scenery: '完成穿越', milestone: true, isEnd: true },
+      ];
+
+      let currentGlobalIndex = -1;
+      const rideDays = dailyRoutes.filter(d => d.type === 'ride');
+      const totalRideDays = rideDays.length;
+
+      const nodeMap = new Map();
+      nodeMap.set('永川', { name: '永川', coord: yongchuan, globalIndex: -1, phase: 1, isStart: true });
+      dailyRoutes.forEach((route, idx) => {
+        if (route.type === 'ride' && !nodeMap.has(route.to)) {
+          nodeMap.set(route.to, {
+            name: route.to,
+            coord: route.coords[1],
+            globalIndex: idx,
+            phase: route.phase,
+            camp: route.camp,
+            scenery: route.scenery,
+            dist: route.dist,
+            climb: route.climb,
+            day: route.day,
+            isMilestone: route.milestone || false,
+            isEnd: route.isEnd || false,
+          });
+        }
+      });
+      const allNodes = Array.from(nodeMap.values());
+
+      const chartDom = document.getElementById('mapChart');
+      const myChart = echarts.init(chartDom);
+      const CHINA_SOURCES = [
+        'https://geo.datav.aliyun.com/areas_v3/bound/100000_full.json',
+        'https://cdn.jsdelivr.net/npm/echarts@4.9.0/map/json/china.json'
+      ];
+      const CHONGQING_DISTRICT_URL = 'https://geo.datav.aliyun.com/areas_v3/bound/500000_full.json';
+
+      function fetchWithTimeout(url, timeout = 8000) {
+        const controller = new AbortController();
+        const timer = setTimeout(() => controller.abort(), timeout);
+        return fetch(url, { signal: controller.signal })
+          .then(r => { clearTimeout(timer); if (!r.ok) throw new Error(); return r.json(); })
+          .catch(e => { clearTimeout(timer); throw e; });
+      }
+
+      async function loadChinaGeo() {
+        for (let url of CHINA_SOURCES) {
+          try { const d = await fetchWithTimeout(url); if (d && d.features) return d; } catch (e) { }
+        }
+        throw new Error('地图数据加载失败');
+      }
+
+      function extractPolygonCoords(geo, name) {
+        for (let f of geo.features) {
+          if (f.properties.name && (f.properties.name === name || f.properties.name.includes(name))) {
+            const geom = f.geometry;
+            if (geom.type === 'Polygon') return geom.coordinates[0].map(c => [c[0], c[1]]);
+            if (geom.type === 'MultiPolygon') return geom.coordinates[0][0].map(c => [c[0], c[1]]);
+          }
+        }
+        return null;
+      }
+      function simplifyCoords(coords, step = 2) {
+        if (!coords || coords.length < step) return coords;
+        const s = [];
+        for (let i = 0; i < coords.length; i += step) s.push(coords[i]);
+        if (s.length > 0) {
+          const f = s[0], l = s[s.length - 1];
+          if (f[0] !== l[0] || f[1] !== l[1]) s.push([f[0], f[1]]);
+        }
+        return s;
+      }
+
+      function getPhaseColor(phase) { return { 1: '#27ae60', 2: '#2980b9', 3: '#e67e22' }[phase] || '#888'; }
+
+      function updateChart(yongchuanCoords = null) {
+        let savedZoom = 1.8, savedCenter = [110, 34.5];
+        try {
+          const currentOption = myChart.getOption();
+          if (currentOption && currentOption.geo && currentOption.geo.length > 0) {
+            const geo = currentOption.geo[0];
+            if (geo.zoom != null) savedZoom = geo.zoom;
+            if (geo.center != null) savedCenter = geo.center;
+          }
+        } catch (e) { }
+
+        let lastRideGlobal = -1;
+        for (let i = 0; i <= currentGlobalIndex && i < dailyRoutes.length; i++) {
+          if (dailyRoutes[i].type === 'ride') lastRideGlobal = i;
+        }
+        const visitedRideDays = rideDays.filter(r => dailyRoutes.indexOf(r) <= lastRideGlobal);
+
+        const bgLines = rideDays.map(r => ({
+          coords: r.coords,
+          lineStyle: { color: '#c8dcc8', width: 2, opacity: 0.5 }
+        }));
+
+        const fgLines = visitedRideDays.map(r => ({
+          coords: r.coords,
+          lineStyle: {
+            color: getPhaseColor(r.phase),
+            width: 3,
+            opacity: 0.9,
+            shadowBlur: 4,
+            shadowColor: 'rgba(0,0,0,0.1)'
+          }
+        }));
+
+        const visitedNodeNames = new Set(allNodes.filter(n => {
+          if (n.globalIndex === -1) return currentGlobalIndex >= 0;
+          return n.globalIndex <= currentGlobalIndex;
+        }).map(n => n.name));
+
+        const grayNodes = allNodes.filter(n => !visitedNodeNames.has(n.name)).map(n => ({
+          name: n.name,
+          value: n.coord,
+          symbolSize: n.isStart || n.isEnd ? 20 : 14,
+          itemStyle: { color: '#bcc9bc', borderColor: '#9aab9a', borderWidth: 1 },
+          label: {
+            show: true,
+            position: 'right',
+            color: '#889988',
+            fontSize: 12,
+            formatter: '{b}'
+          }
+        }));
+
+        const visitedNodes = allNodes.filter(n => {
+          if (n.globalIndex === -1) return currentGlobalIndex >= 0;
+          return n.globalIndex <= currentGlobalIndex;
+        }).map(n => ({
+          name: n.name,
+          value: n.coord,
+          symbolSize: n.isStart || n.isEnd ? 22 : 16,
+          itemStyle: {
+            color: n.isStart ? '#e8755a' : n.isEnd ? '#4a90d9' : getPhaseColor(n.phase),
+            borderColor: '#fff',
+            borderWidth: 2,
+            shadowBlur: 8,
+            shadowColor: 'rgba(0,0,0,0.2)'
+          },
+          label: {
+            show: true,
+            position: 'right',
+            color: '#2d5a3d',
+            fontWeight: 'bold',
+            fontSize: 12,
+            formatter: '{b}'
+          },
+          globalIndex: n.globalIndex,
+          phase: n.phase,
+          camp: n.camp,
+          scenery: n.scenery,
+          day: n.day
+        }));
+
+        let currentCoord = null;
+        if (currentGlobalIndex >= 0) {
+          const cur = dailyRoutes[currentGlobalIndex];
+          if (cur.type === 'ride') {
+            currentCoord = cur.coords[1];
+          } else if (cur.type === 'rest') {
+            for (let i = currentGlobalIndex - 1; i >= 0; i--) {
+              if (dailyRoutes[i].type === 'ride') { currentCoord = dailyRoutes[i].coords[1]; break; }
+            }
+          }
+        }
+        const effectData = currentCoord ? [{ value: currentCoord, symbolSize: 24, itemStyle: { color: '#ffb347' } }] : [];
+
+        const series = [
+          { type: 'lines', coordinateSystem: 'geo', polyline: false, data: bgLines, zlevel: 1, silent: true },
+          { type: 'lines', coordinateSystem: 'geo', polyline: false, data: fgLines, zlevel: 2, silent: true },
+          { type: 'scatter', coordinateSystem: 'geo', data: grayNodes, zlevel: 5, silent: false, symbol: 'circle', cursor: 'pointer' },
+          { type: 'scatter', coordinateSystem: 'geo', data: visitedNodes, zlevel: 6, silent: false, symbol: 'circle', cursor: 'pointer' },
+          { type: 'effectScatter', coordinateSystem: 'geo', data: effectData, zlevel: 7, silent: true, rippleEffect: { scale: 3, period: 4, color: 'rgba(255,179,71,0.4)' } },
+        ];
+
+        if (yongchuanCoords && yongchuanCoords.length) {
+          series.push({
+            type: 'lines', coordinateSystem: 'geo', polyline: false,
+            data: [{ coords: yongchuanCoords, lineStyle: { color: '#f39c12', width: 2.2, type: 'dashed', opacity: 0.9 } }],
+            zlevel: 0, silent: true
+          });
+        }
+
+        const option = {
+          backgroundColor: 'transparent',
+          tooltip: {
+            trigger: 'item',
+            backgroundColor: 'rgba(255,255,255,0.96)',
+            borderColor: '#a5c8a5',
+            borderRadius: 12,
+            padding: [12, 16],
+            textStyle: { color: '#2d5a3d', fontSize: 12 },
+            formatter: function (params) {
+              if (params.seriesType === 'scatter' && params.name) {
+                const node = allNodes.find(n => n.name === params.name);
+                if (!node) return params.name;
+                if (node.isStart) return '<b>🏁 永川（起点）</b><br/>从这里出发';
+                const info = dailyRoutes[node.globalIndex];
+                if (!info || info.type === 'rest') return `<b>${node.name}</b><br/>休整点`;
+                return `<b>${info.day} 抵达 ${node.name}</b><br/>
+                                    📏 ${info.dist}  ⛰️ 爬升 ${info.climb}<br/>
+                                    🏕️ 营地：${info.camp}<br/>
+                                    🏞️ 风景：${info.scenery}`;
+              }
+              return '';
+            }
+          },
+          geo: {
+            map: 'china',
+            roam: true,
+            zoom: savedZoom,
+            center: savedCenter,
+            scaleLimit: { min: 0.8, max: 12 },
+            label: { show: false },
+            emphasis: { label: { show: false }, itemStyle: { areaColor: '#dce8dc' } },
+            itemStyle: { areaColor: '#f5faf5', borderColor: '#c8d8c8', borderWidth: 1 },
+            regions: [
+              { name: '重庆市', itemStyle: { areaColor: '#fce4db', borderColor: '#e8755a', borderWidth: 2 }, label: { show: false } },
+              { name: '北京市', itemStyle: { areaColor: '#dce9f7', borderColor: '#4a90d9', borderWidth: 2 }, label: { show: false } }
+            ]
+          },
+          series: series
+        };
+
+        myChart.setOption(option, { notMerge: true, lazyUpdate: false });
+      }
+
+      function setProgress(globalIndex) {
+        if (globalIndex < -1 || globalIndex >= dailyRoutes.length) return;
+        currentGlobalIndex = globalIndex;
+        updateChart(window.yongchuanBoundary || null);
+      }
+
+      myChart.off('click');
+      myChart.on('click', function (params) {
+        if (params.seriesType === 'scatter' && params.name) {
+          const node = allNodes.find(n => n.name === params.name);
+          if (node) {
+            if (node.globalIndex === -1) {
+              setProgress(-1);
+            } else {
+              setProgress(node.globalIndex);
+            }
+          }
+        }
+      });
+
+      window.addEventListener('resize', () => myChart.resize());
+
+      async function init() {
+        try {
+          const chinaGeo = await loadChinaGeo();
+          echarts.registerMap('china', chinaGeo);
+          let yongchuanCoords = null;
+          try {
+            const cqGeo = await fetchWithTimeout(CHONGQING_DISTRICT_URL);
+            if (cqGeo) {
+              const coords = extractPolygonCoords(cqGeo, '永川区');
+              if (coords) yongchuanCoords = simplifyCoords(coords, 2);
+            }
+          } catch (e) { }
+          window.yongchuanBoundary = yongchuanCoords;
+          updateChart(yongchuanCoords);
+          console.log('✅ 地图已就绪，缩放已放大');
+        } catch (e) {
+          document.getElementById('mapChart').innerHTML = '<div style="padding:40px;text-align:center;color:#c44;">地图加载失败，请检查网络连接</div>';
+        }
+      }
+      init();
+    })();
+  </script>
+</body>
+
+</html>

@@ -1,0 +1,815 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>露营美食 - 骑行食谱</title>
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+    />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      * { margin: 0; padding: 0; box-sizing: border-box; }
+
+      :root {
+        --primary-green: #2d5a3d;
+        --secondary-green: #4a7c59;
+        --light-green: #e8f5ec;
+        --white: #ffffff;
+        --text-gray: #666666;
+        --text-dark: #333333;
+        --mint-green: #a5d6a7;
+        --cream: #fafafa;
+        --text-orange: #b8860b;
+        --orange: #e67e22;
+        --red: #e74c3c;
+        --blue: #2980b9;
+        --shadow: 0 2px 12px rgba(45, 90, 61, 0.1);
+      }
+
+      body {
+        font-family: "Noto Sans SC", sans-serif;
+        background: linear-gradient(180deg, #e8f5e9 0%, #f5f5f5 100%);
+        min-height: 100vh;
+        padding: 15px;
+        padding-bottom: 100px;
+      }
+
+      /* 顶部标题栏 */
+      .page-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 10px 0 20px;
+      }
+
+      .page-title {
+        font-size: 1.6rem;
+        font-weight: 700;
+        color: var(--primary-green);
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+
+      .add-btn {
+        width: 44px;
+        height: 44px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, var(--primary-green), var(--secondary-green));
+        color: white;
+        border: none;
+        font-size: 1.3rem;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        box-shadow: 0 3px 10px rgba(45, 90, 61, 0.25);
+        transition: all 0.3s ease;
+      }
+
+      .add-btn:hover { transform: scale(1.1); }
+
+      /* 分类标签 */
+      .category-tabs {
+        display: flex;
+        gap: 10px;
+        overflow-x: auto;
+        padding-bottom: 15px;
+        scrollbar-width: none;
+      }
+
+      .category-tabs::-webkit-scrollbar { display: none; }
+
+      .category-tab {
+        padding: 8px 20px;
+        border-radius: 20px;
+        border: 2px solid var(--secondary-green);
+        background: white;
+        color: var(--secondary-green);
+        font-size: 0.9rem;
+        font-weight: 500;
+        cursor: pointer;
+        white-space: nowrap;
+        transition: all 0.3s ease;
+        flex-shrink: 0;
+      }
+
+      .category-tab.active {
+        background: var(--secondary-green);
+        color: white;
+      }
+
+      .category-tab:hover {
+        background: var(--light-green);
+      }
+
+      .category-tab.active:hover {
+        background: var(--secondary-green);
+      }
+
+      /* 食谱卡片网格 */
+      .recipes-grid {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 12px;
+        margin-bottom: 20px;
+      }
+
+      .recipe-card {
+        background: var(--white);
+        border-radius: 14px;
+        padding: 16px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        box-shadow: var(--shadow);
+        position: relative;
+        overflow: hidden;
+      }
+
+      .recipe-card:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 4px 20px rgba(45, 90, 61, 0.2);
+      }
+
+      .recipe-card-icon {
+        font-size: 2.5rem;
+        margin-bottom: 8px;
+      }
+
+      .recipe-card-name {
+        font-weight: 600;
+        color: var(--text-dark);
+        font-size: 0.95rem;
+        margin-bottom: 6px;
+      }
+
+      .recipe-card-meta {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 5px;
+        font-size: 0.7rem;
+        color: var(--text-gray);
+      }
+
+      .recipe-card-meta span {
+        background: var(--light-green);
+        padding: 2px 8px;
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        gap: 3px;
+      }
+
+      .recipe-card-badge {
+        position: absolute;
+        top: 10px;
+        right: 10px;
+        font-size: 0.65rem;
+        padding: 2px 8px;
+        border-radius: 10px;
+        font-weight: 500;
+      }
+
+      .badge-easy { background: #d4edda; color: #155724; }
+      .badge-medium { background: #fff3cd; color: #856404; }
+      .badge-hard { background: #f8d7da; color: #721c24; }
+
+      .empty-state {
+        text-align: center;
+        padding: 50px 20px;
+        color: var(--text-gray);
+      }
+
+      .empty-state i {
+        font-size: 3rem;
+        color: var(--mint-green);
+        margin-bottom: 15px;
+      }
+
+      /* 模态框 */
+      .modal-overlay {
+        position: fixed;
+        top: 0; left: 0; right: 0; bottom: 0;
+        background: rgba(0, 0, 0, 0.5);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 1000;
+        opacity: 0; visibility: hidden;
+        transition: all 0.3s ease;
+      }
+
+      .modal-overlay.show { opacity: 1; visibility: visible; }
+
+      .modal {
+        background: white;
+        border-radius: 20px;
+        padding: 25px;
+        width: 90%;
+        max-width: 440px;
+        max-height: 85vh;
+        overflow-y: auto;
+        transform: scale(0.9);
+        transition: transform 0.3s ease;
+      }
+
+      .modal-overlay.show .modal { transform: scale(1); }
+
+      .modal-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 20px;
+      }
+
+      .modal-title {
+        font-size: 1.3rem;
+        font-weight: 600;
+        color: var(--primary-green);
+      }
+
+      .modal-close {
+        width: 32px; height: 32px;
+        border: none; background: #eee;
+        border-radius: 50%; cursor: pointer;
+        display: flex; align-items: center; justify-content: center;
+        font-size: 1rem; color: var(--text-gray);
+      }
+
+      .modal-close:hover { background: #ddd; }
+
+      .form-group {
+        margin-bottom: 13px;
+      }
+
+      .form-group label {
+        display: block;
+        font-size: 0.85rem;
+        font-weight: 500;
+        color: var(--text-dark);
+        margin-bottom: 4px;
+      }
+
+      .form-group input,
+      .form-group textarea,
+      .form-group select {
+        width: 100%;
+        padding: 10px 12px;
+        border: 2px solid #eee;
+        border-radius: 10px;
+        font-size: 0.95rem;
+        font-family: inherit;
+        transition: border-color 0.3s ease;
+      }
+
+      .form-group input:focus,
+      .form-group textarea:focus,
+      .form-group select:focus {
+        outline: none;
+        border-color: var(--secondary-green);
+      }
+
+      .form-group textarea {
+        resize: vertical;
+        min-height: 60px;
+      }
+
+      .form-row {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 12px;
+      }
+
+      .modal-actions {
+        display: flex;
+        gap: 12px;
+        margin-top: 22px;
+      }
+
+      .modal-btn {
+        flex: 1;
+        padding: 12px;
+        border: none;
+        border-radius: 10px;
+        font-size: 1rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s ease;
+      }
+
+      .modal-btn.cancel { background: #eee; color: var(--text-gray); }
+      .modal-btn.cancel:hover { background: #ddd; }
+      .modal-btn.confirm {
+        background: linear-gradient(135deg, var(--primary-green), var(--secondary-green));
+        color: white;
+      }
+      .modal-btn.confirm:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(45, 90, 61, 0.3);
+      }
+      .modal-btn.delete {
+        background: var(--red);
+        color: white;
+      }
+
+      /* 食谱详情 */
+      .detail-icon {
+        font-size: 3rem;
+        text-align: center;
+        margin-bottom: 10px;
+      }
+
+      .detail-name {
+        font-size: 1.3rem;
+        font-weight: 700;
+        color: var(--primary-green);
+        text-align: center;
+        margin-bottom: 15px;
+      }
+
+      .detail-stats {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 8px;
+        margin-bottom: 18px;
+      }
+
+      .detail-stat {
+        text-align: center;
+        background: var(--light-green);
+        border-radius: 10px;
+        padding: 10px 5px;
+      }
+
+      .detail-stat-value {
+        font-size: 1.1rem;
+        font-weight: 700;
+        color: var(--primary-green);
+      }
+
+      .detail-stat-label {
+        font-size: 0.7rem;
+        color: var(--text-gray);
+        margin-top: 2px;
+      }
+
+      .detail-section {
+        margin-bottom: 15px;
+      }
+
+      .detail-section-title {
+        font-size: 0.95rem;
+        font-weight: 600;
+        color: var(--secondary-green);
+        margin-bottom: 6px;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+      }
+
+      .detail-section-content {
+        font-size: 0.9rem;
+        color: var(--text-dark);
+        line-height: 1.7;
+        white-space: pre-line;
+        background: var(--light-green);
+        border-radius: 10px;
+        padding: 12px;
+      }
+
+      .detail-tips {
+        background: #fff8e1;
+        border-left: 4px solid var(--orange);
+        padding: 10px 14px;
+        border-radius: 0 10px 10px 0;
+        font-size: 0.85rem;
+        color: #795548;
+        margin-top: 12px;
+      }
+
+      /* 底部导航 */
+      .bottom-nav {
+        position: fixed;
+        bottom: 0; left: 0; right: 0;
+        display: flex;
+        background: var(--white);
+        border-radius: 20px 20px 0 0;
+        box-shadow: 0 -4px 20px rgba(45, 90, 61, 0.12);
+        padding: 8px 15px;
+        padding-bottom: calc(8px + env(safe-area-inset-bottom));
+        z-index: 100;
+        justify-content: space-around;
+      }
+
+      .nav-item {
+        flex: 1; max-width: 90px;
+        display: flex; flex-direction: column; align-items: center;
+        padding: 10px 8px; border-radius: 14px;
+        cursor: pointer; color: var(--text-gray);
+        transition: all 0.3s ease;
+        text-decoration: none;
+      }
+
+      .nav-item.active {
+        background: linear-gradient(135deg, rgba(45, 90, 61, 0.15), rgba(74, 124, 89, 0.1));
+        color: var(--primary-green);
+      }
+
+      .nav-item:hover { color: var(--secondary-green); }
+      .nav-item i { font-size: 1.4rem; margin-bottom: 5px; }
+      .nav-item span { font-size: 0.72rem; font-weight: 500; }
+
+      @media (min-width: 768px) {
+        .recipes-grid { grid-template-columns: repeat(3, 1fr); }
+      }
+
+      @media (min-width: 1024px) {
+        body { max-width: 1200px; margin: 0 auto; padding: 20px; }
+        .recipes-grid { grid-template-columns: repeat(4, 1fr); }
+        .bottom-nav { position: static; margin-top: 20px; }
+      }
+    </style>
+  </head>
+  <body>
+    <!-- 顶部 -->
+    <div class="page-header">
+      <h1 class="page-title">🍳 露营美食</h1>
+      <button class="add-btn" onclick="openAddModal()" title="添加食谱">
+        <i class="fas fa-plus"></i>
+      </button>
+    </div>
+
+    <!-- 分类标签 -->
+    <div class="category-tabs" id="category-tabs">
+      <div class="category-tab active" data-category="" onclick="filterCategory('')">全部</div>
+    </div>
+
+    <!-- 食谱列表 -->
+    <div class="recipes-grid" id="recipes-grid">
+      <div class="empty-state">
+        <i class="fas fa-utensils"></i>
+        <p>加载中...</p>
+      </div>
+    </div>
+
+    <!-- 底部导航 -->
+    <div class="bottom-nav">
+      <a class="nav-item" href="/">
+        <i class="fa-solid fa-bicycle"></i>
+        <span>骑行</span>
+      </a>
+      <a class="nav-item" href="/food">
+        <i class="fa-solid fa-utensils"></i>
+        <span>美食</span>
+      </a>
+      <a class="nav-item" >
+        <i class="fa-solid fa-user"></i>
+        <span>我</span>
+      </a>
+    </div>
+
+    <!-- 添加/编辑模态框 -->
+    <div class="modal-overlay" id="form-modal" onclick="closeModal('form-modal')">
+      <div class="modal" onclick="event.stopPropagation()">
+        <div class="modal-header">
+          <h3 class="modal-title" id="form-modal-title">添加食谱</h3>
+          <button class="modal-close" onclick="closeModal('form-modal')">
+            <i class="fas fa-times"></i>
+          </button>
+        </div>
+        <input type="hidden" id="recipe-id">
+        <div class="form-group">
+          <label>食谱名称 *</label>
+          <input type="text" id="recipe-name" placeholder="例如：番茄鸡蛋面">
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>分类 *</label>
+            <select id="recipe-category">
+              <option value="">请选择</option>
+              <option value="早餐">早餐</option>
+              <option value="主食">主食</option>
+              <option value="配菜">配菜</option>
+              <option value="零食">零食</option>
+              <option value="饮品">饮品</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>难度 *</label>
+            <select id="recipe-difficulty">
+              <option value="简单">简单</option>
+              <option value="中等">中等</option>
+              <option value="困难">困难</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>烹饪时间 (分钟)</label>
+            <input type="number" id="recipe-cook-time" value="5" min="0">
+          </div>
+          <div class="form-group">
+            <label>卡路里 (kcal)</label>
+            <input type="number" id="recipe-calories" value="300" min="0">
+          </div>
+        </div>
+        <div class="form-group">
+          <label>所需装备</label>
+          <input type="text" id="recipe-equipment" placeholder="例如：炉头+锅 / 无需烹饪">
+        </div>
+        <div class="form-group">
+          <label>食材清单 *</label>
+          <textarea id="recipe-ingredients" placeholder="每项用逗号分隔，例如：挂面100g,鸡蛋1个,番茄1个"></textarea>
+        </div>
+        <div class="form-group">
+          <label>制作步骤 *</label>
+          <textarea id="recipe-steps" placeholder="每步一行，例如：&#10;1.烧开水&#10;2.放入面条煮3分钟&#10;3.加入调料"></textarea>
+        </div>
+        <div class="form-group">
+          <label>小贴士</label>
+          <input type="text" id="recipe-tips" placeholder="烹饪或携带建议">
+        </div>
+        <div class="modal-actions">
+          <button class="modal-btn cancel" onclick="closeModal('form-modal')">取消</button>
+          <button class="modal-btn confirm" onclick="saveRecipe()">保存</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 食谱详情模态框 -->
+    <div class="modal-overlay" id="detail-modal" onclick="closeModal('detail-modal')">
+      <div class="modal" onclick="event.stopPropagation()">
+        <div class="modal-header">
+          <h3 class="modal-title">食谱详情</h3>
+          <div style="display:flex;gap:8px;">
+            <button class="modal-close" style="background:#2196f3;color:white;" onclick="editFromDetail()" title="编辑">
+              <i class="fas fa-edit"></i>
+            </button>
+            <button class="modal-close" onclick="closeModal('detail-modal')">
+              <i class="fas fa-times"></i>
+            </button>
+          </div>
+        </div>
+        <div class="detail-icon" id="detail-icon"></div>
+        <div class="detail-name" id="detail-name"></div>
+        <div class="detail-stats">
+          <div class="detail-stat">
+            <div class="detail-stat-value" id="detail-category"></div>
+            <div class="detail-stat-label">分类</div>
+          </div>
+          <div class="detail-stat">
+            <div class="detail-stat-value" id="detail-difficulty"></div>
+            <div class="detail-stat-label">难度</div>
+          </div>
+          <div class="detail-stat">
+            <div class="detail-stat-value" id="detail-cook-time"></div>
+            <div class="detail-stat-label">分钟</div>
+          </div>
+          <div class="detail-stat">
+            <div class="detail-stat-value" id="detail-calories"></div>
+            <div class="detail-stat-label">kcal</div>
+          </div>
+        </div>
+        <div class="detail-section">
+          <div class="detail-section-title">🔧 所需装备</div>
+          <div class="detail-section-content" id="detail-equipment"></div>
+        </div>
+        <div class="detail-section">
+          <div class="detail-section-title">🥘 食材清单</div>
+          <div class="detail-section-content" id="detail-ingredients"></div>
+        </div>
+        <div class="detail-section">
+          <div class="detail-section-title">📝 制作步骤</div>
+          <div class="detail-section-content" id="detail-steps"></div>
+        </div>
+        <div class="detail-tips" id="detail-tips" style="display:none;"></div>
+        <div class="modal-actions" style="margin-top:18px;">
+          <button class="modal-btn delete" onclick="deleteFromDetail()">
+            <i class="fas fa-trash"></i> 删除此食谱
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 删除确认模态框 -->
+    <div class="modal-overlay" id="delete-modal" onclick="closeModal('delete-modal')">
+      <div class="modal" onclick="event.stopPropagation()" style="text-align:center;">
+        <div style="font-size:2.5rem;margin-bottom:10px;">⚠️</div>
+        <h3 style="color:var(--text-dark);margin-bottom:10px;">确认删除</h3>
+        <p style="color:var(--text-gray);margin-bottom:20px;">确定要删除 <strong id="delete-recipe-name"></strong> 吗？此操作不可恢复。</p>
+        <input type="hidden" id="delete-recipe-id">
+        <div class="modal-actions">
+          <button class="modal-btn cancel" onclick="closeModal('delete-modal')">取消</button>
+          <button class="modal-btn delete" onclick="confirmDelete()">确认删除</button>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      let allRecipes = [];
+      let currentCategory = '';
+      let currentDetailRecipe = null;
+
+      function getIcon(category) {
+        const map = { '早餐': '🌅', '主食': '🍜', '配菜': '🥗', '零食': '🍪', '饮品': '☕' };
+        return map[category] || '🍽️';
+      }
+
+      function loadCategories() {
+        fetch('/api/food/categories')
+          .then(r => r.json())
+          .then(cats => {
+            const tabs = document.getElementById('category-tabs');
+            tabs.innerHTML = '<div class="category-tab active" data-category="" onclick="filterCategory(\'\')">全部</div>';
+            cats.forEach(c => {
+              tabs.innerHTML += `<div class="category-tab" data-category="${c}" onclick="filterCategory('${c}')">${getIcon(c)} ${c}</div>`;
+            });
+          });
+      }
+
+      function loadRecipes() {
+        const url = currentCategory ? `/api/food/recipes?category=${encodeURIComponent(currentCategory)}` : '/api/food/recipes';
+        fetch(url)
+          .then(r => r.json())
+          .then(data => {
+            allRecipes = data;
+            renderRecipes();
+          });
+      }
+
+      function renderRecipes() {
+        const grid = document.getElementById('recipes-grid');
+        if (allRecipes.length === 0) {
+          grid.innerHTML = `<div class="empty-state">
+            <i class="fas fa-utensils"></i>
+            <p>还没有食谱，点击右上角 + 添加你的第一个露营食谱吧！</p>
+          </div>`;
+          return;
+        }
+        grid.innerHTML = allRecipes.map(r => {
+          const badgeClass = r.difficulty === '简单' ? 'badge-easy' : r.difficulty === '中等' ? 'badge-medium' : 'badge-hard';
+          return `<div class="recipe-card" onclick="openDetail(${r.id})">
+            <span class="recipe-card-badge ${badgeClass}">${r.difficulty}</span>
+            <div class="recipe-card-icon">${getIcon(r.category)}</div>
+            <div class="recipe-card-name">${r.name}</div>
+            <div class="recipe-card-meta">
+              <span>⏱ ${r.cookTime}分钟</span>
+              <span>🔥 ${r.calories}kcal</span>
+              <span>${r.category}</span>
+            </div>
+          </div>`;
+        }).join('');
+      }
+
+      function filterCategory(cat) {
+        currentCategory = cat;
+        document.querySelectorAll('.category-tab').forEach(t => t.classList.remove('active'));
+        document.querySelector(`.category-tab[data-category="${cat}"]`).classList.add('active');
+        loadRecipes();
+      }
+
+      function openAddModal() {
+        document.getElementById('form-modal-title').textContent = '添加食谱';
+        document.getElementById('recipe-id').value = '';
+        document.getElementById('recipe-name').value = '';
+        document.getElementById('recipe-category').value = '';
+        document.getElementById('recipe-difficulty').value = '简单';
+        document.getElementById('recipe-cook-time').value = '5';
+        document.getElementById('recipe-calories').value = '300';
+        document.getElementById('recipe-equipment').value = '';
+        document.getElementById('recipe-ingredients').value = '';
+        document.getElementById('recipe-steps').value = '';
+        document.getElementById('recipe-tips').value = '';
+        document.getElementById('form-modal').classList.add('show');
+      }
+
+      function openEditModal(id) {
+        const r = allRecipes.find(x => x.id === id);
+        if (!r) return;
+        document.getElementById('form-modal-title').textContent = '编辑食谱';
+        document.getElementById('recipe-id').value = r.id;
+        document.getElementById('recipe-name').value = r.name;
+        document.getElementById('recipe-category').value = r.category;
+        document.getElementById('recipe-difficulty').value = r.difficulty;
+        document.getElementById('recipe-cook-time').value = r.cookTime;
+        document.getElementById('recipe-calories').value = r.calories;
+        document.getElementById('recipe-equipment').value = r.equipment;
+        document.getElementById('recipe-ingredients').value = r.ingredients;
+        document.getElementById('recipe-steps').value = r.steps;
+        document.getElementById('recipe-tips').value = r.tips || '';
+        document.getElementById('form-modal').classList.add('show');
+      }
+
+      function openDetail(id) {
+        const r = allRecipes.find(x => x.id === id);
+        if (!r) return;
+        currentDetailRecipe = r;
+        document.getElementById('detail-icon').textContent = getIcon(r.category);
+        document.getElementById('detail-name').textContent = r.name;
+        document.getElementById('detail-category').textContent = r.category;
+        document.getElementById('detail-difficulty').textContent = r.difficulty;
+        document.getElementById('detail-cook-time').textContent = r.cookTime;
+        document.getElementById('detail-calories').textContent = r.calories;
+        document.getElementById('detail-equipment').textContent = r.equipment || '无需特殊装备';
+        document.getElementById('detail-ingredients').textContent = r.ingredients;
+        document.getElementById('detail-steps').textContent = r.steps;
+        const tipsEl = document.getElementById('detail-tips');
+        if (r.tips) {
+          tipsEl.style.display = 'block';
+          tipsEl.innerHTML = '💡 <strong>小贴士：</strong>' + r.tips;
+        } else {
+          tipsEl.style.display = 'none';
+        }
+        document.getElementById('detail-modal').classList.add('show');
+      }
+
+      function editFromDetail() {
+        closeModal('detail-modal');
+        setTimeout(() => openEditModal(currentDetailRecipe.id), 300);
+      }
+
+      function deleteFromDetail() {
+        closeModal('detail-modal');
+        setTimeout(() => {
+          document.getElementById('delete-recipe-id').value = currentDetailRecipe.id;
+          document.getElementById('delete-recipe-name').textContent = currentDetailRecipe.name;
+          document.getElementById('delete-modal').classList.add('show');
+        }, 300);
+      }
+
+      function saveRecipe() {
+        const id = document.getElementById('recipe-id').value;
+        const data = {
+          name: document.getElementById('recipe-name').value.trim(),
+          category: document.getElementById('recipe-category').value,
+          difficulty: document.getElementById('recipe-difficulty').value,
+          cookTime: parseInt(document.getElementById('recipe-cook-time').value) || 0,
+          calories: parseInt(document.getElementById('recipe-calories').value) || 0,
+          equipment: document.getElementById('recipe-equipment').value.trim(),
+          ingredients: document.getElementById('recipe-ingredients').value.trim(),
+          steps: document.getElementById('recipe-steps').value.trim(),
+          tips: document.getElementById('recipe-tips').value.trim()
+        };
+
+        if (!data.name || !data.category || !data.ingredients || !data.steps) {
+          showToast('请填写名称、分类、食材和步骤');
+          return;
+        }
+
+        const url = id ? `/api/food/recipe/${id}` : '/api/food/recipe';
+        const method = id ? 'PUT' : 'POST';
+
+        fetch(url, {
+          method: method,
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(data)
+        })
+        .then(r => r.json())
+        .then(() => {
+          showToast(id ? '修改成功！' : '添加成功！');
+          closeModal('form-modal');
+          loadRecipes();
+          loadCategories();
+        });
+      }
+
+      function confirmDelete() {
+        const id = document.getElementById('delete-recipe-id').value;
+        fetch(`/api/food/recipe/${id}`, { method: 'DELETE' })
+          .then(r => r.json())
+          .then(() => {
+            showToast('已删除');
+            closeModal('delete-modal');
+            loadRecipes();
+            loadCategories();
+          });
+      }
+
+      function closeModal(id) {
+        document.getElementById(id).classList.remove('show');
+      }
+
+      function showToast(msg) {
+        const toast = document.createElement('div');
+        toast.style.cssText = 'position:fixed;bottom:120px;left:50%;transform:translateX(-50%);background:rgba(45,90,61,0.9);color:white;padding:12px 24px;border-radius:10px;font-weight:600;z-index:2000;opacity:0;transition:opacity 0.3s ease;';
+        toast.textContent = msg;
+        document.body.appendChild(toast);
+        setTimeout(() => toast.style.opacity = '1', 10);
+        setTimeout(() => {
+          toast.style.opacity = '0';
+          setTimeout(() => document.body.removeChild(toast), 300);
+        }, 2000);
+      }
+
+      document.addEventListener('DOMContentLoaded', () => {
+        loadCategories();
+        loadRecipes();
+      });
+    </script>
+  </body>
+</html>

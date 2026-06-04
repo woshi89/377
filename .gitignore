@@ -1,0 +1,17 @@
+# 虚拟环境
+venv/
+
+# Python 缓存
+__pycache__/
+*.py[cod]
+*$py.class
+
+# IDE
+.vscode/
+
+# 数据库文件（如不需提交可取消下面注释）
+# *.db
+
+# 系统文件
+Desktop.ini
+Thumbs.db
