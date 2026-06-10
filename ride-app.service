@@ -1,0 +1,17 @@
+[Unit]
+Description=骑行数据面板 (Flask + Waitress)
+After=network.target
+
+[Service]
+User=myapp
+Group=myapp
+WorkingDirectory=/home/myapp/377
+Environment="PATH=/home/myapp/377/venv/bin"
+ExecStart=/home/myapp/377/venv/bin/waitress-serve --host=0.0.0.0 --port=5000 app:app
+Restart=always
+RestartSec=5
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target

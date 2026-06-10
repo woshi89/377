@@ -576,6 +576,13 @@
     </div>
 
     <script>
+        function escapeHtml(str) {
+            if (!str) return '';
+            const div = document.createElement('div');
+            div.textContent = str;
+            return div.innerHTML;
+        }
+
         let chart;
         let currentPeriod = 'day';
         let rideRecords = [];
@@ -634,7 +641,7 @@
             const tbody = document.getElementById('data-body');
             tbody.innerHTML = labels.map((label, i) => `
                 <tr>
-                    <td>${label}</td>
+                    <td>${escapeHtml(String(label))}</td>
                     <td>${values[i]} km</td>
                 </tr>
             `).join('');
@@ -670,12 +677,12 @@
             }
             list.innerHTML = rideRecords.map(record => `
                 <div class="ride-record-item">
-                    <div class="record-date">${record.date}</div>
+                    <div class="record-date">${escapeHtml(record.date)}</div>
                     <div class="record-info">
                         <div>
                             <span class="record-distance">${record.distance} km</span>
                         </div>
-                        ${record.note ? `<div class="record-note">${record.note}</div>` : ''}
+                        ${record.note ? `<div class="record-note">${escapeHtml(record.note)}</div>` : ''}
                     </div>
                     <div class="record-actions">
                         <button class="record-action-btn edit" onclick="openEditModal(${record.id})" title="编辑">

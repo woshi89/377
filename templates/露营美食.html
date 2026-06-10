@@ -611,6 +611,13 @@
     </div>
 
     <script>
+      function escapeHtml(str) {
+        if (!str) return '';
+        const div = document.createElement('div');
+        div.textContent = str;
+        return div.innerHTML;
+      }
+
       let allRecipes = [];
       let currentCategory = '';
       let currentDetailRecipe = null;
@@ -627,7 +634,7 @@
             const tabs = document.getElementById('category-tabs');
             tabs.innerHTML = '<div class="category-tab active" data-category="" onclick="filterCategory(\'\')">全部</div>';
             cats.forEach(c => {
-              tabs.innerHTML += `<div class="category-tab" data-category="${c}" onclick="filterCategory('${c}')">${getIcon(c)} ${c}</div>`;
+              tabs.innerHTML += `<div class="category-tab" data-category="${escapeHtml(c)}" onclick="filterCategory(this.dataset.category)">${getIcon(c)} ${escapeHtml(c)}</div>`;
             });
           });
       }
@@ -654,13 +661,13 @@
         grid.innerHTML = allRecipes.map(r => {
           const badgeClass = r.difficulty === '简单' ? 'badge-easy' : r.difficulty === '中等' ? 'badge-medium' : 'badge-hard';
           return `<div class="recipe-card" onclick="openDetail(${r.id})">
-            <span class="recipe-card-badge ${badgeClass}">${r.difficulty}</span>
+            <span class="recipe-card-badge ${badgeClass}">${escapeHtml(r.difficulty)}</span>
             <div class="recipe-card-icon">${getIcon(r.category)}</div>
-            <div class="recipe-card-name">${r.name}</div>
+            <div class="recipe-card-name">${escapeHtml(r.name)}</div>
             <div class="recipe-card-meta">
               <span>⏱ ${r.cookTime}分钟</span>
               <span>🔥 ${r.calories}kcal</span>
-              <span>${r.category}</span>
+              <span>${escapeHtml(r.category)}</span>
             </div>
           </div>`;
         }).join('');
@@ -721,7 +728,7 @@
         const tipsEl = document.getElementById('detail-tips');
         if (r.tips) {
           tipsEl.style.display = 'block';
-          tipsEl.innerHTML = '💡 <strong>小贴士：</strong>' + r.tips;
+          tipsEl.innerHTML = '💡 <strong>小贴士：</strong>' + escapeHtml(r.tips);
         } else {
           tipsEl.style.display = 'none';
         }

@@ -1,18 +1,70 @@
-﻿from flask import Flask, render_template, jsonify, request, redirect, url_for, session
+﻿from flask import Flask, render_template, jsonify, request, redirect, url_for, session, make_response
 import sqlite3
 import os
 import secrets
 import threading
 import time
 import shutil
+import hashlib
+import hmac
 from datetime import datetime
+from collections import defaultdict
 
-# ========== 访问密钥配置 ==========
-# 部署时设置环境变量 ACCESS_KEY=你的密码
-ACCESS_KEY = os.environ.get('ACCESS_KEY', '123')
+# ========== 安全配置 ==========
+# 部署时必须设置 ACCESS_KEY 环境变量
+ACCESS_KEY = os.environ.get('ACCESS_KEY', '')
+if not ACCESS_KEY:
+    print('⚠️ 未设置 ACCESS_KEY，使用随机密码（仅限开发）')
+    ACCESS_KEY = secrets.token_hex(16)
+    print(f'🔑 本次密码: {ACCESS_KEY}')
 
 app = Flask(__name__)
 app.secret_key = os.environ.get('SECRET_KEY', secrets.token_hex(32))
+
+# ---- Session Cookie 加固 ----
+app.config.update(
+    SESSION_COOKIE_HTTPONLY=True,   # JS 无法读取 cookie，防 XSS 窃取
+    SESSION_COOKIE_SAMESITE='Lax',  # 防 CSRF
+    SESSION_COOKIE_SECURE=False,    # 本机部署无 HTTPS，设 False
+)
+
+# ---- 登录频率限制 ----
+LOGIN_ATTEMPTS = defaultdict(list)  # {ip: [timestamp, ...]}
+MAX_ATTEMPTS = 5       # 最多尝试次数
+ATTEMPT_WINDOW = 300   # 5分钟内
+
+def is_rate_limited(ip):
+    now = time.time()
+    attempts = [t for t in LOGIN_ATTEMPTS.get(ip, []) if now - t < ATTEMPT_WINDOW]
+    LOGIN_ATTEMPTS[ip] = attempts
+    return len(attempts) >= MAX_ATTEMPTS
+
+def record_attempt(ip):
+    LOGIN_ATTEMPTS[ip].append(time.time())
+
+# ---- CSRF Token 生成 ----
+def generate_csrf_token():
+    return secrets.token_hex(32)
+
+@app.before_request
+def csrf_check():
+    """对写操作校验 CSRF token"""
+    if request.method in ('POST', 'PUT', 'DELETE'):
+        token = request.headers.get('X-CSRF-Token') or request.form.get('csrf_token')
+        if not token or not hmac.compare_digest(token, session.get('csrf_token', '')):
+            # 允许 /login 通过（登录时还没有 token）
+            if request.path != '/login':
+                return jsonify({'error': 'CSRF validation failed'}), 403
+
+@app.after_request
+def security_headers(response):
+    """添加安全响应头"""
+    response.headers['X-Content-Type-Options'] = 'nosniff'
+    response.headers['X-Frame-Options'] = 'DENY'
+    response.headers['X-XSS-Protection'] = '1; mode=block'
+    response.headers['Referrer-Policy'] = 'strict-origin-when-cross-origin'
+    response.headers['Content-Security-Policy'] = "default-src 'self' https://cdnjs.cloudflare.com https://fonts.googleapis.com https://fonts.gstatic.com 'unsafe-inline' 'unsafe-eval'; img-src * data:; connect-src 'self' https://*.tile.openstreetmap.org"
+    return response
 DATABASE = 'ride.db'
 BACKUP_DIR = 'backups'
 BACKUP_KEEP_DAYS = 30  # 只保留最近 30 天的备份
@@ -127,15 +179,24 @@ def check_access():
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     if request.method == 'POST':
+        # 频率限制检查
+        ip = request.remote_addr
+        if is_rate_limited(ip):
+            time_left = int(ATTEMPT_WINDOW - (time.time() - min(LOGIN_ATTEMPTS[ip])))
+            return f'<h2>🚫 登录尝试过多</h2><p>请 {time_left} 秒后再试。</p>', 429
         if request.form.get('password') == ACCESS_KEY:
             session['authed'] = True
+            session['csrf_token'] = generate_csrf_token()
             next_url = request.args.get('next')
-            # 防止跳转到外部站点
             if next_url and next_url.startswith('/'):
                 return redirect(next_url)
             return redirect('/')
         else:
+            record_attempt(ip)
             return LOGIN_PAGE.replace('{error_script}', '<script>document.getElementById("err").style.display="block"</script>')
+    # GET: 初始化 CSRF token
+    if 'csrf_token' not in session:
+        session['csrf_token'] = generate_csrf_token()
     return LOGIN_PAGE.replace('{error_script}', '')
 
 def init_db():
@@ -540,6 +601,11 @@ def food_categories_api():
     conn.close()
     return jsonify(categories)
 if __name__ == '__main__':
+    import sys
+    from waitress import serve
+    # Windows 下控制台设置 UTF-8 编码，避免 emoji 乱码
+    if sys.platform == 'win32':
+        sys.stdout.reconfigure(encoding='utf-8')
     init_db()
     # 启动后台备份线程（守护线程，主进程退出时自动结束）
     t = threading.Thread(target=backup_loop, daemon=True)
@@ -549,5 +615,7 @@ if __name__ == '__main__':
         print('⚠️ 使用默认密码 123，公网部署请设置 ACCESS_KEY 环境变量！')
     else:
         print('🔒 访问保护已开启（密码登入）')
-    app.run(debug=False, host='0.0.0.0', port=5000)
-    app.run(debug=False, host='0.0.0.0', port=5000)
+    print('🚀 Waitress 生产服务器启动: http://0.0.0.0:5000')
+    if os.environ.get('ACCESS_KEY'):
+        print('🔒 访问保护已开启（密码登入）')
+    serve(app, host='0.0.0.0', port=5000)

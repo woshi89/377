@@ -952,6 +952,14 @@
     </div>
 
     <script>
+      // HTML 转义函数，防止 XSS 攻击
+      function escapeHtml(str) {
+        if (!str) return '';
+        const div = document.createElement('div');
+        div.textContent = str;
+        return div.innerHTML;
+      }
+
       const mockData = {
         stats: {
           totalKm: 468,
@@ -1076,13 +1084,13 @@
         }
         list.innerHTML = rideRecords.map(record => `
           <div class="ride-record-item" data-id="${record.id}">
-            <div class="record-date">${record.date}</div>
+            <div class="record-date">${escapeHtml(record.date)}</div>
             <div class="record-info">
               <div>
                 <span class="record-distance">${record.distance} km</span>
                 <span class="record-speed">平均速度: ${record.avgSpeed} km/h</span>
               </div>
-              ${record.note ? `<div class="record-note">${record.note}</div>` : ''}
+              ${record.note ? `<div class="record-note">${escapeHtml(record.note)}</div>` : ''}
             </div>
             <div class="record-actions">
               <button class="record-action-btn edit" onclick="openEditModal(${record.id})" title="编辑">

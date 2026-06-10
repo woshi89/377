@@ -667,6 +667,13 @@
     </div>
 
     <script>
+        function escapeHtml(str) {
+            if (!str) return '';
+            const div = document.createElement('div');
+            div.textContent = str;
+            return div.innerHTML;
+        }
+
         let currentView = 'day';
         let currentDate = new Date();
         let chartInstance = null;
@@ -786,7 +793,7 @@
                 const val = values[i] || 0;
                 return `
                     <tr>
-                        <td>${label}</td>
+                        <td>${escapeHtml(String(label))}</td>
                         <td class="expense-value">¥${val}</td>
                         <td>-</td>
                         <td>-</td>
@@ -828,10 +835,10 @@
                     <div class="record-main">
                         <div class="record-top">
                             <span class="record-amount">¥${record.amount}</span>
-                            <span class="expense-category category-${record.category}">${record.category}</span>
-                            <span class="record-meta">${record.date}</span>
+                            <span class="expense-category category-${escapeHtml(record.category)}">${escapeHtml(record.category)}</span>
+                            <span class="record-meta">${escapeHtml(record.date)}</span>
                         </div>
-                        ${record.description ? `<div class="record-desc">${record.description}</div>` : ''}
+                        ${record.description ? `<div class="record-desc">${escapeHtml(record.description)}</div>` : ''}
                     </div>
                     <div class="record-actions">
                         <button class="record-action-btn edit" onclick="openEditModal(${record.id})" title="编辑">
