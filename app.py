@@ -5,8 +5,6 @@ import secrets
 import threading
 import time
 import shutil
-import hashlib
-import hmac
 from datetime import datetime
 from collections import defaultdict
 
@@ -42,28 +40,12 @@ def is_rate_limited(ip):
 def record_attempt(ip):
     LOGIN_ATTEMPTS[ip].append(time.time())
 
-# ---- CSRF Token 生成 ----
-def generate_csrf_token():
-    return secrets.token_hex(32)
-
-@app.before_request
-def csrf_check():
-    """对写操作校验 CSRF token"""
-    if request.method in ('POST', 'PUT', 'DELETE'):
-        token = request.headers.get('X-CSRF-Token') or request.form.get('csrf_token')
-        if not token or not hmac.compare_digest(token, session.get('csrf_token', '')):
-            # 允许 /login 通过（登录时还没有 token）
-            if request.path != '/login':
-                return jsonify({'error': 'CSRF validation failed'}), 403
-
 @app.after_request
 def security_headers(response):
-    """添加安全响应头"""
+    """添加安全响应头（轻量级，不阻断正常功能）"""
     response.headers['X-Content-Type-Options'] = 'nosniff'
-    response.headers['X-Frame-Options'] = 'DENY'
-    response.headers['X-XSS-Protection'] = '1; mode=block'
+    response.headers['X-Frame-Options'] = 'SAMEORIGIN'
     response.headers['Referrer-Policy'] = 'strict-origin-when-cross-origin'
-    response.headers['Content-Security-Policy'] = "default-src 'self' https://cdnjs.cloudflare.com https://fonts.googleapis.com https://fonts.gstatic.com 'unsafe-inline' 'unsafe-eval'; img-src * data:; connect-src 'self' https://*.tile.openstreetmap.org"
     return response
 DATABASE = 'ride.db'
 BACKUP_DIR = 'backups'
@@ -186,7 +168,6 @@ def login():
             return f'<h2>🚫 登录尝试过多</h2><p>请 {time_left} 秒后再试。</p>', 429
         if request.form.get('password') == ACCESS_KEY:
             session['authed'] = True
-            session['csrf_token'] = generate_csrf_token()
             next_url = request.args.get('next')
             if next_url and next_url.startswith('/'):
                 return redirect(next_url)
@@ -194,9 +175,6 @@ def login():
         else:
             record_attempt(ip)
             return LOGIN_PAGE.replace('{error_script}', '<script>document.getElementById("err").style.display="block"</script>')
-    # GET: 初始化 CSRF token
-    if 'csrf_token' not in session:
-        session['csrf_token'] = generate_csrf_token()
     return LOGIN_PAGE.replace('{error_script}', '')
 
 def init_db():
