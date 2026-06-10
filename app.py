@@ -1,9 +1,142 @@
-﻿from flask import Flask, render_template, jsonify, request
+﻿from flask import Flask, render_template, jsonify, request, redirect, url_for, session
 import sqlite3
 import os
+import secrets
+import threading
+import time
+import shutil
+from datetime import datetime
+
+# ========== 访问密钥配置 ==========
+# 部署时设置环境变量 ACCESS_KEY=你的密码
+ACCESS_KEY = os.environ.get('ACCESS_KEY', '123')
 
 app = Flask(__name__)
+app.secret_key = os.environ.get('SECRET_KEY', secrets.token_hex(32))
 DATABASE = 'ride.db'
+BACKUP_DIR = 'backups'
+BACKUP_KEEP_DAYS = 30  # 只保留最近 30 天的备份
+
+def do_backup():
+    """执行数据库备份"""
+    os.makedirs(BACKUP_DIR, exist_ok=True)
+    today = datetime.now().strftime('%Y-%m-%d')
+    backup_name = f'ride_{today}.db'
+    backup_path = os.path.join(BACKUP_DIR, backup_name)
+    if not os.path.exists(backup_path):
+        shutil.copy2(DATABASE, backup_path)
+        print(f'📦 数据库已备份: {backup_path}')
+        # 清理过期备份
+        cutoff = datetime.now().timestamp() - BACKUP_KEEP_DAYS * 86400
+        for f in os.listdir(BACKUP_DIR):
+            fp = os.path.join(BACKUP_DIR, f)
+            if f.startswith('ride_') and f.endswith('.db'):
+                if os.path.getmtime(fp) < cutoff:
+                    os.remove(fp)
+                    print(f'🗑️ 清理过期备份: {f}')
+
+def backup_loop():
+    """后台线程：每 30 秒检查一次，在 00:00-00:01 之间触发备份"""
+    backed_up_today = False
+    while True:
+        now = datetime.now()
+        if now.hour == 0 and now.minute == 0 and not backed_up_today:
+            do_backup()
+            backed_up_today = True
+        elif now.hour == 1:
+            backed_up_today = False  # 凌晨1点重置标志
+        time.sleep(30)
+
+# 登录页 HTML（与网站绿色骑行风格一致）
+LOGIN_PAGE = '''
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>登录</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    min-height: 100vh;
+    display: flex; align-items: center; justify-content: center;
+    background: linear-gradient(135deg, #2d5a3d, #1a3c24);
+    font-family: 'Segoe UI', 'Noto Sans SC', sans-serif;
+  }
+  .login-box {
+    background: #fff; border-radius: 16px; padding: 48px 36px 36px;
+    width: 380px; max-width: 90vw; box-shadow: 0 20px 60px rgba(0,0,0,0.35);
+  }
+  .login-box .icon {
+    text-align: center; font-size: 3.5rem; margin-bottom: 12px;
+  }
+  .login-box h2 {
+    text-align: center; color: #2d5a3d; margin-bottom: 8px;
+    font-size: 1.5rem; font-weight: 700;
+  }
+  .login-box .sub {
+    text-align: center; color: #999; font-size: 0.85rem; margin-bottom: 28px;
+  }
+  .login-box input {
+    width: 100%; padding: 14px 16px; border: 2px solid #e0e0e0;
+    border-radius: 10px; font-size: 1rem; outline: none;
+    transition: border-color 0.3s; font-family: inherit;
+  }
+  .login-box input:focus { border-color: #2d5a3d; }
+  .login-box button {
+    width: 100%; padding: 14px; margin-top: 20px;
+    background: linear-gradient(135deg, #2d5a3d, #1a3c24);
+    color: #fff; border: none; border-radius: 10px;
+    font-size: 1.05rem; font-weight: 600; cursor: pointer;
+    transition: opacity 0.3s; font-family: inherit;
+  }
+  .login-box button:hover { opacity: 0.9; }
+  .login-box .error {
+    color: #e53935; text-align: center; margin-top: 16px;
+    font-size: 0.9rem; display: none;
+  }
+</style>
+</head>
+<body>
+<div class="login-box">
+  <div class="icon">🔐</div>
+  <h2>骑行数据面板</h2>
+  <p class="sub">请输入访问密码</p>
+  <form method="POST" id="loginForm">
+    <input type="password" name="password" placeholder="密码" autofocus required>
+    <button type="submit">🏍️ 进入</button>
+    <p class="error" id="err">密码错误，请重试</p>
+  </form>
+</div>
+{error_script}
+</body>
+</html>
+'''
+
+@app.before_request
+def check_access():
+    # 登录页本身、静态文件不拦截
+    if request.path == '/login' or request.path.startswith('/static'):
+        return
+    # 已登录通过
+    if session.get('authed'):
+        return
+    # 跳转登录页，记住原本要去哪
+    return redirect(url_for('login', next=request.url))
+
+@app.route('/login', methods=['GET', 'POST'])
+def login():
+    if request.method == 'POST':
+        if request.form.get('password') == ACCESS_KEY:
+            session['authed'] = True
+            next_url = request.args.get('next')
+            # 防止跳转到外部站点
+            if next_url and next_url.startswith('/'):
+                return redirect(next_url)
+            return redirect('/')
+        else:
+            return LOGIN_PAGE.replace('{error_script}', '<script>document.getElementById("err").style.display="block"</script>')
+    return LOGIN_PAGE.replace('{error_script}', '')
 
 def init_db():
     conn = sqlite3.connect(DATABASE)
@@ -408,4 +541,13 @@ def food_categories_api():
     return jsonify(categories)
 if __name__ == '__main__':
     init_db()
+    # 启动后台备份线程（守护线程，主进程退出时自动结束）
+    t = threading.Thread(target=backup_loop, daemon=True)
+    t.start()
+    print('⏰ 自动备份已启用（每天 00:00，保留最近30天）')
+    if ACCESS_KEY == '123':
+        print('⚠️ 使用默认密码 123，公网部署请设置 ACCESS_KEY 环境变量！')
+    else:
+        print('🔒 访问保护已开启（密码登入）')
+    app.run(debug=False, host='0.0.0.0', port=5000)
     app.run(debug=False, host='0.0.0.0', port=5000)

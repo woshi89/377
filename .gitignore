@@ -10,7 +10,10 @@ __pycache__/
 .vscode/
 
 # 数据库文件（如不需提交可取消下面注释）
-# *.db
+*.db
+
+# 数据库备份
+backups/
 
 # 系统文件
 Desktop.ini
