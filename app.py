@@ -221,12 +221,6 @@ def init_db():
                   category TEXT,
                   description TEXT)''')
     
-    c.execute('''CREATE TABLE IF NOT EXISTS equipment
-                 (id INTEGER PRIMARY KEY AUTOINCREMENT,
-                  name TEXT,
-                  status TEXT,
-                  last_maintenance TEXT)''')
-    
     c.execute('''CREATE TABLE IF NOT EXISTS maintenance_tasks
                  (id INTEGER PRIMARY KEY AUTOINCREMENT,
                   name TEXT,
@@ -278,24 +272,6 @@ def init_db():
             ('2026-06-11', 80, '餐饮', '能量补给'),
         ]
         c.executemany('INSERT INTO expenses (date, amount, category, description) VALUES (?, ?, ?, ?)', expenses)
-        equipments = [
-            ('自行车', '良好', '2026-05-01'),
-            ('骑行眼镜', '一般', '2026-04-15'),
-            ('头盔', '良好', '2026-05-01'),
-            ('骑行手套', '需维修', '2026-03-20'),
-            ('骑行服', '良好', '2026-04-01'),
-            ('骑行鞋', '一般', '2026-03-10'),
-        ]
-        c.executemany('INSERT INTO equipment (name, status, last_maintenance) VALUES (?, ?, ?)', equipments)
-
-        tasks = [
-            ('链条', 2800, 3000, 'km'),
-            ('刹车皮', 1200, 2000, 'km'),
-            ('轮胎', 3500, 5000, 'km'),
-            ('变速线', 4800, 5000, 'km'),
-            ('脚踏板', 12, 24, '个月'),
-        ]
-        c.executemany('INSERT INTO maintenance_tasks (name, current_value, max_value, unit) VALUES (?, ?, ?, ?)', tasks)
 
     conn.commit()
     conn.close()

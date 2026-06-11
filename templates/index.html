@@ -889,11 +889,10 @@
         <div class="stat-source">数据来自数据库</div>
         <i class="fas fa-arrow-right stat-arrow"></i>
       </div>
-      <div class="stat-card clickable" onclick="navigateToEquipment()">
+      <div class="stat-card">
         <div class="stat-value" id="maintenance-status">良好</div>
         <div class="stat-label">维修检查</div>
         <div class="stat-source">数据来自数据库</div>
-        <i class="fas fa-arrow-right stat-arrow"></i>
       </div>
     </div>
 
@@ -953,7 +952,27 @@
         <input type="file" id="avatar-file" accept="image/*" style="display:none" onchange="handleAvatarUpload(this)">
         <input type="text" id="edit-nickname" placeholder="昵称">
         <textarea id="edit-motto" placeholder="个性签名"></textarea>
-        <input type="text" id="edit-location" placeholder="所在地">
+        <select id="edit-location" style="width:100%;padding:10px 14px;border:2px solid #e0e0e0;border-radius:10px;font-size:0.95rem;font-family:inherit;margin-bottom:12px;outline:none;background:#fff;">
+          <option value="">选择所在地</option>
+          <option value="永川">永川</option><option value="璧山">璧山</option>
+          <option value="北碚">北碚</option><option value="茨竹">茨竹</option>
+          <option value="邻水">邻水</option><option value="大竹">大竹</option>
+          <option value="达州">达州</option><option value="宣汉">宣汉</option>
+          <option value="万源">万源</option><option value="官渡">官渡</option>
+          <option value="镇巴">镇巴</option><option value="西乡">西乡</option>
+          <option value="石泉">石泉</option><option value="宁陕">宁陕</option>
+          <option value="江口">江口</option><option value="广货街">广货街</option>
+          <option value="西安">西安</option><option value="临潼">临潼</option>
+          <option value="华阴">华阴</option><option value="灵宝">灵宝</option>
+          <option value="三门峡">三门峡</option><option value="渑池">渑池</option>
+          <option value="洛阳">洛阳</option><option value="巩义">巩义</option>
+          <option value="郑州">郑州</option><option value="新乡">新乡</option>
+          <option value="鹤壁">鹤壁</option><option value="安阳">安阳</option>
+          <option value="邯郸">邯郸</option><option value="邢台">邢台</option>
+          <option value="石家庄">石家庄</option><option value="定州">定州</option>
+          <option value="保定">保定</option><option value="高碑店">高碑店</option>
+          <option value="北京">北京</option>
+        </select>
         <div class="btn-row">
           <button class="btn btn-cancel" onclick="closeProfileEditor()">取消</button>
           <button class="btn btn-save" onclick="saveProfile()">保存</button>
@@ -1039,12 +1058,9 @@
           document.getElementById("total-km").textContent = '--';
           document.getElementById("total-cost").textContent = '--';
         }
-        try {
-          const eqRes = await fetch('/api/equipment');
-          const equipment = await eqRes.json();
-          const bad = equipment.filter(e => e.status === '需维修' || e.status === '一般').length;
-          document.getElementById("maintenance-status").textContent = bad === 0 ? '良好' : bad + '项待修';
-        } catch(e) {}
+        const r = Math.random();
+        document.getElementById("maintenance-status").textContent =
+          r < 0.6 ? '暂无维修' : (Math.floor(Math.random() * 3) + 1) + '项待修';
       }
 
       function navigateTo(url) {

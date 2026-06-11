@@ -415,7 +415,7 @@
             emphasis: { label: { show: false }, itemStyle: { areaColor: '#dce8dc' } },
             itemStyle: { areaColor: '#f5faf5', borderColor: '#c8d8c8', borderWidth: 1 },
             regions: [
-              { name: '重庆市', itemStyle: { areaColor: '#fce4db', borderColor: '#e8755a', borderWidth: 2 }, label: { show: false } },
+              { name: '重庆市', itemStyle: { areaColor: '#fce4db', borderWidth: 0 }, label: { show: false } },
               { name: '北京市', itemStyle: { areaColor: '#dce9f7', borderColor: '#4a90d9', borderWidth: 2 }, label: { show: false } }
             ]
           },
@@ -425,10 +425,23 @@
         myChart.setOption(option, { notMerge: true, lazyUpdate: false });
       }
 
-      function setProgress(globalIndex) {
+      function setProgress(globalIndex, skipSave) {
         if (globalIndex < -1 || globalIndex >= dailyRoutes.length) return;
         currentGlobalIndex = globalIndex;
         updateChart(window.yongchuanBoundary || null);
+        if (skipSave) return;
+        // 同步所在地到首页
+        let loc = '永川';
+        if (globalIndex >= 0) {
+          const cur = dailyRoutes[globalIndex];
+          loc = cur.type === 'rest' ? dailyRoutes[Math.max(0, globalIndex - 1)].to : cur.to;
+        }
+        fetch('/api/profile', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ location: loc }),
+          credentials: 'include'
+        }).catch(() => {});
       }
 
       myChart.off('click');
@@ -460,8 +473,20 @@
             }
           } catch (e) { }
           window.yongchuanBoundary = yongchuanCoords;
-          updateChart(yongchuanCoords);
-          console.log('✅ 地图已就绪，缩放已放大');
+          // 从数据库读取当前所在地并点亮对应节点
+          try {
+            const profileResp = await fetch('/api/profile', { credentials: 'include' });
+            const profile = await profileResp.json();
+            const locNode = allNodes.find(n => n.name === profile.location);
+            if (locNode) {
+              setProgress(locNode.globalIndex, true);
+            } else {
+              updateChart(yongchuanCoords);
+            }
+          } catch(e) {
+            updateChart(yongchuanCoords);
+          }
+          console.log('✅ 地图已就绪');
         } catch (e) {
           document.getElementById('mapChart').innerHTML = '<div style="padding:40px;text-align:center;color:#c44;">地图加载失败，请检查网络连接</div>';
         }
