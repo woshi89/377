@@ -106,6 +106,13 @@
         font-size: 40px;
         line-height: 1;
       }
+      .avatar-emoji img {
+        width: 100%;
+        height: 100%;
+        border-radius: 50%;
+        object-fit: cover;
+        display: block;
+      }
 
       .welcome-content {
         flex: 1;
@@ -824,7 +831,7 @@
     <!-- 顶部欢迎区 -->
     <div class="welcome-card">
       <div class="avatar" ondblclick="openProfileEditor()" title="双击更换头像">
-        <span id="avatar-emoji" class="avatar-emoji">🚴</span>
+        <span id="avatar-emoji" class="avatar-emoji"></span>
       </div>
       <div class="welcome-content">
         <h1 id="profile-name">一禄的骑行日记</h1>
@@ -918,8 +925,14 @@
       <div class="modal" onclick="event.stopPropagation()">
         <h3>编辑个人资料</h3>
         <div style="text-align:center;font-size:3rem;margin-bottom:8px;" id="preview-avatar">🚴</div>
-        <p style="text-align:center;color:#999;font-size:0.8rem;margin-bottom:12px;">点击下方图标更换头像</p>
+        <p style="text-align:center;color:#999;font-size:0.8rem;margin-bottom:12px;">
+          选择 emoji 或上传本地图片
+        </p>
         <div class="emoji-picker" id="emoji-picker"></div>
+        <label for="avatar-file" style="display:block;text-align:center;padding:10px;border:2px dashed #ccc;border-radius:10px;cursor:pointer;margin-bottom:12px;color:#999;font-size:0.85rem;transition:border-color 0.2s;" onmouseover="this.style.borderColor='var(--primary-green)'" onmouseout="this.style.borderColor='#ccc'" id="upload-label">
+          📁 点击上传本地图片
+        </label>
+        <input type="file" id="avatar-file" accept="image/*" style="display:none" onchange="handleAvatarUpload(this)">
         <input type="text" id="edit-nickname" placeholder="昵称">
         <textarea id="edit-motto" placeholder="个性签名"></textarea>
         <input type="text" id="edit-location" placeholder="所在地">
@@ -1017,20 +1030,40 @@
 
       let currentProfile = { nickname: '', motto: '', location: '', avatar: '🚴' };
 
+      function renderAvatar(avatarData) {
+        const el = document.getElementById('avatar-emoji');
+        if (avatarData && avatarData.startsWith('data:image')) {
+          el.innerHTML = '<img src="' + avatarData + '" alt="avatar">';
+        } else {
+          el.innerHTML = '';
+          el.textContent = avatarData || '🚴';
+          el.style.fontSize = '40px';
+        }
+      }
+
       async function loadProfile() {
         try {
           const resp = await fetch('/api/profile');
           const data = await resp.json();
           currentProfile = data;
-          document.getElementById('avatar-emoji').textContent = data.avatar || '🚴';
+          renderAvatar(data.avatar);
           document.getElementById('profile-name').textContent = (data.nickname || '骑行者') + '的骑行日记';
           document.getElementById('profile-motto').textContent = data.motto || '';
         } catch(e) { /* use defaults */ }
       }
 
       function openProfileEditor() {
-        buildEmojiPicker(currentProfile.avatar);
-        document.getElementById('preview-avatar').textContent = currentProfile.avatar;
+        buildEmojiPicker(currentProfile.avatar && !currentProfile.avatar.startsWith('data:') ? currentProfile.avatar : '');
+        const preview = document.getElementById('preview-avatar');
+        if (currentProfile.avatar && currentProfile.avatar.startsWith('data:image')) {
+          preview.textContent = '';
+          preview.style.fontSize = '0';
+          preview.innerHTML = '<img src="' + currentProfile.avatar + '" style="width:60px;height:60px;border-radius:50%;object-fit:cover;">';
+        } else {
+          preview.innerHTML = '';
+          preview.textContent = currentProfile.avatar || '🚴';
+          preview.style.fontSize = '3rem';
+        }
         document.getElementById('edit-nickname').value = currentProfile.nickname || '';
         document.getElementById('edit-motto').value = currentProfile.motto || '';
         document.getElementById('edit-location').value = currentProfile.location || '';
@@ -1051,8 +1084,40 @@
 
       function selectAvatar(emoji) {
         currentProfile.avatar = emoji;
-        document.getElementById('preview-avatar').textContent = emoji;
+        const preview = document.getElementById('preview-avatar');
+        preview.innerHTML = '';
+        preview.textContent = emoji;
+        preview.style.fontSize = '3rem';
         buildEmojiPicker(emoji);
+      }
+
+      async function handleAvatarUpload(input) {
+        const file = input.files[0];
+        if (!file) return;
+        if (file.size > 5 * 1024 * 1024) { showToast('图片不能超过 5MB'); return; }
+        const label = document.getElementById('upload-label');
+        label.textContent = '⏳ 上传中...';
+        const fd = new FormData();
+        fd.append('avatar', file);
+        try {
+          const resp = await fetch('/api/profile/avatar', { method: 'POST', body: fd });
+          const result = await resp.json();
+          if (result.success) {
+            currentProfile.avatar = result.avatar;
+            const preview = document.getElementById('preview-avatar');
+            preview.textContent = '';
+            preview.style.fontSize = '0';
+            preview.innerHTML = '<img src="' + result.avatar + '" style="width:60px;height:60px;border-radius:50%;object-fit:cover;">';
+            buildEmojiPicker('');
+            showToast('头像上传成功');
+          } else {
+            showToast(result.error || '上传失败');
+          }
+        } catch(e) {
+          showToast('上传失败，请重试');
+        }
+        label.textContent = '📁 点击上传本地图片';
+        input.value = '';
       }
 
       async function saveProfile() {
@@ -1064,7 +1129,7 @@
           headers: {'Content-Type': 'application/json'},
           body: JSON.stringify(currentProfile)
         });
-        document.getElementById('avatar-emoji').textContent = currentProfile.avatar;
+        renderAvatar(currentProfile.avatar);
         document.getElementById('profile-name').textContent = (currentProfile.nickname || '骑行者') + '的骑行日记';
         document.getElementById('profile-motto').textContent = currentProfile.motto || '';
         document.getElementById('profile-modal').classList.remove('show');

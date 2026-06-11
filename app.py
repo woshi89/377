@@ -5,8 +5,16 @@ import secrets
 import threading
 import time
 import shutil
+import base64
+import io
 from datetime import datetime
 from collections import defaultdict
+
+try:
+    from PIL import Image
+    HAS_PIL = True
+except ImportError:
+    HAS_PIL = False
 
 # ========== 安全配置 ==========
 # 部署时必须设置 ACCESS_KEY 环境变量
@@ -318,6 +326,38 @@ def update_profile():
     conn.commit()
     conn.close()
     return jsonify({'success': True})
+
+@app.route('/api/profile/avatar', methods=['POST'])
+def upload_avatar():
+    """上传头像图片，返回 base64 data URL"""
+    file = request.files.get('avatar')
+    if not file or file.filename == '':
+        return jsonify({'error': '未选择文件'}), 400
+    # 限制大小 5MB
+    data = file.read()
+    if len(data) > 5 * 1024 * 1024:
+        return jsonify({'error': '图片不能超过 5MB'}), 400
+    # 用 Pillow 缩放
+    if HAS_PIL:
+        img = Image.open(io.BytesIO(data))
+        if img.mode in ('RGBA', 'P'):
+            img = img.convert('RGB')
+        img.thumbnail((200, 200), Image.LANCZOS)
+        buf = io.BytesIO()
+        img.save(buf, format='JPEG', quality=80)
+        data = buf.getvalue()
+    # 转 base64
+    ext = file.filename.rsplit('.', 1)[-1].lower() if '.' in file.filename else 'jpg'
+    mime = f'image/{ext}' if ext in ('png','gif','webp') else 'image/jpeg'
+    b64 = base64.b64encode(data).decode()
+    avatar_url = f'data:{mime};base64,{b64}'
+    # 存入数据库
+    conn = sqlite3.connect(DATABASE)
+    c = conn.cursor()
+    c.execute('UPDATE profile SET avatar=? WHERE id=1', (avatar_url,))
+    conn.commit()
+    conn.close()
+    return jsonify({'avatar': avatar_url, 'success': True})
 
 @app.route('/api/stats')
 def stats_api():
