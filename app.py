@@ -614,22 +614,16 @@ def food_categories_api():
     categories = [r[0] for r in c.fetchall()]
     conn.close()
     return jsonify(categories)
+# 模块导入时自动初始化（兼容 waitress-serve / gunicorn 启动）
+init_db()
+t = threading.Thread(target=backup_loop, daemon=True)
+t.start()
+
 if __name__ == '__main__':
     import sys
     from waitress import serve
-    # Windows 下控制台设置 UTF-8 编码，避免 emoji 乱码
     if sys.platform == 'win32':
         sys.stdout.reconfigure(encoding='utf-8')
-    init_db()
-    # 启动后台备份线程（守护线程，主进程退出时自动结束）
-    t = threading.Thread(target=backup_loop, daemon=True)
-    t.start()
     print('⏰ 自动备份已启用（每天 00:00，保留最近30天）')
-    if ACCESS_KEY == '123':
-        print('⚠️ 使用默认密码 123，公网部署请设置 ACCESS_KEY 环境变量！')
-    else:
-        print('🔒 访问保护已开启（密码登入）')
     print('🚀 Waitress 生产服务器启动: http://0.0.0.0:5000')
-    if os.environ.get('ACCESS_KEY'):
-        print('🔒 访问保护已开启（密码登入）')
     serve(app, host='0.0.0.0', port=5000)
