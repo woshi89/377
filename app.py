@@ -246,15 +246,21 @@ def init_db():
                   steps TEXT,
                   tips TEXT)''')
 
-    if not c.execute('SELECT * FROM profile').fetchone():
+    # 只在数据库首次创建时插入种子数据，避免重启时重新插入
+    c.execute('''CREATE TABLE IF NOT EXISTS _meta
+                 (key TEXT PRIMARY KEY, value TEXT)''')
+    c.execute("SELECT value FROM _meta WHERE key='seeded'")
+    already_seeded = c.fetchone()
+
+    if not already_seeded:
+        c.execute("INSERT OR REPLACE INTO _meta (key, value) VALUES ('seeded', '1')")
+
         c.execute('INSERT INTO profile (nickname, motto, location, avatar) VALUES (?, ?, ?, ?)',
                   ('一禄', '每一次踩踏，都是自由的宣告。', '北京', '🚴'))
-    
-    if not c.execute('SELECT * FROM stats').fetchone():
+
         c.execute('INSERT INTO stats (total_km, total_cost, maintenance_status) VALUES (?, ?, ?)',
                   (468, 2680, '良好'))
-    
-    if not c.execute('SELECT * FROM ride_records').fetchone():
+
         records = [
             ('2026-06-15', 35.5, 22.3, '骑行第一天！'),
             ('2026-06-14', 28.8, 20.1, '日常通勤'),
@@ -264,7 +270,6 @@ def init_db():
         ]
         c.executemany('INSERT INTO ride_records (date, distance, avg_speed, note) VALUES (?, ?, ?, ?)', records)
 
-    if not c.execute('SELECT * FROM expenses').fetchone():
         expenses = [
             ('2026-06-15', 180, '装备', '刹车皮'),
             ('2026-06-14', 50, '餐饮', '骑行后加餐'),
@@ -273,8 +278,6 @@ def init_db():
             ('2026-06-11', 80, '餐饮', '能量补给'),
         ]
         c.executemany('INSERT INTO expenses (date, amount, category, description) VALUES (?, ?, ?, ?)', expenses)
-    
-    if not c.execute('SELECT * FROM equipment').fetchone():
         equipments = [
             ('自行车', '良好', '2026-05-01'),
             ('骑行眼镜', '一般', '2026-04-15'),
@@ -284,8 +287,7 @@ def init_db():
             ('骑行鞋', '一般', '2026-03-10'),
         ]
         c.executemany('INSERT INTO equipment (name, status, last_maintenance) VALUES (?, ?, ?)', equipments)
-    
-    if not c.execute('SELECT * FROM maintenance_tasks').fetchone():
+
         tasks = [
             ('链条', 2800, 3000, 'km'),
             ('刹车皮', 1200, 2000, 'km'),
