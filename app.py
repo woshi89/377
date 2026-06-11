@@ -248,7 +248,7 @@ def init_db():
 
     if not c.execute('SELECT * FROM profile').fetchone():
         c.execute('INSERT INTO profile (nickname, motto, location, avatar) VALUES (?, ?, ?, ?)',
-                  ('一禄', '每一次踩踏，都是向自由的靠近', '北京', '🚴'))
+                  ('一禄', '每一次踩踏，都是自由的宣告。', '北京', '🚴'))
     
     if not c.execute('SELECT * FROM stats').fetchone():
         c.execute('INSERT INTO stats (total_km, total_cost, maintenance_status) VALUES (?, ?, ?)',
