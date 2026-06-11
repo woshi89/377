@@ -911,13 +911,6 @@
           <div class="feature-name">路线规划</div>
           <div class="feature-desc">规划骑行路线</div>
         </div>
-        <div class="feature-card" onclick="showFeature('club')">
-          <div class="feature-icon">
-            <i class="fas fa-users"></i>
-          </div>
-          <div class="feature-name">骑行社群</div>
-          <div class="feature-desc">加入骑行队伍</div>
-        </div>
         <div class="feature-card" onclick="showFeature('shop')">
           <div class="feature-icon">
             <i class="fas fa-shopping-bag"></i>
@@ -1015,36 +1008,43 @@
         return div.innerHTML;
       }
 
-      const mockData = {
-        stats: {
-          totalKm: 468,
-          location: "北京",
-          totalCost: "¥2,680",
-          maintenanceStatus: "良好",
-        },
-        targetDate: "2026-09-01",
-      };
+      const rideStartDate = "2026-06-15";
 
       function updateCountdown() {
-        const target = new Date(mockData.targetDate);
+        const start = new Date(rideStartDate);
         const now = new Date();
-        const diff = target - now;
-        const days = Math.ceil(diff / (1000 * 60 * 60 * 24));
-        document.getElementById("countdown-days").textContent = Math.max(
-          0,
-          days,
-        );
+        const diff = now - start;
+        const days = Math.floor(diff / (1000 * 60 * 60 * 24)) + 1;
+        document.getElementById("countdown-days").textContent = Math.max(1, days);
       }
 
-      function renderStats() {
-        document.getElementById("total-km").textContent =
-          mockData.stats.totalKm;
-        document.getElementById("location").textContent =
-          mockData.stats.location;
-        document.getElementById("total-cost").textContent =
-          mockData.stats.totalCost;
-        document.getElementById("maintenance-status").textContent =
-          mockData.stats.maintenanceStatus;
+      async function renderStats() {
+        try {
+          const [kmRes, costRes, profileRes] = await Promise.all([
+            fetch('/api/ride_stats/year'),
+            fetch('/api/expense_stats/year'),
+            fetch('/api/profile')
+          ]);
+          const kmData = await kmRes.json();
+          const costData = await costRes.json();
+          const profile = await profileRes.json();
+
+          const totalKm = kmData.values.reduce((a, b) => a + b, 0);
+          const totalCost = costData.values.reduce((a, b) => a + b, 0);
+
+          document.getElementById("total-km").textContent = totalKm;
+          document.getElementById("total-cost").textContent = '¥' + totalCost.toLocaleString();
+          document.getElementById("location").textContent = profile.location || '北京';
+        } catch(e) {
+          document.getElementById("total-km").textContent = '--';
+          document.getElementById("total-cost").textContent = '--';
+        }
+        try {
+          const eqRes = await fetch('/api/equipment');
+          const equipment = await eqRes.json();
+          const bad = equipment.filter(e => e.status === '需维修' || e.status === '一般').length;
+          document.getElementById("maintenance-status").textContent = bad === 0 ? '良好' : bad + '项待修';
+        } catch(e) {}
       }
 
       function navigateTo(url) {

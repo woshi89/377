@@ -893,7 +893,8 @@
             fetch(url, {
                 method: method,
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(payload)
+                body: JSON.stringify(payload),
+                credentials: 'include'
             })
             .then(res => res.json())
             .then(() => {
@@ -915,7 +916,7 @@
 
         function deleteExpense() {
             const id = document.getElementById('delete-expense-id').value;
-            fetch(`/api/expense_record/${id}`, { method: 'DELETE' })
+            fetch(`/api/expense_record/${id}`, { method: 'DELETE', credentials: 'include' })
             .then(res => res.json())
             .then(() => {
                 showToast('删除成功');
