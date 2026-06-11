@@ -185,7 +185,13 @@ def init_db():
                  (id INTEGER PRIMARY KEY AUTOINCREMENT,
                   nickname TEXT,
                   motto TEXT,
-                  location TEXT)''')
+                  location TEXT,
+                  avatar TEXT DEFAULT '🚴')''')
+    # 兼容旧数据库：无 avatar 列时自动添加
+    c.execute("PRAGMA table_info(profile)")
+    columns = [col[1] for col in c.fetchall()]
+    if 'avatar' not in columns:
+        c.execute("ALTER TABLE profile ADD COLUMN avatar TEXT DEFAULT '🚴'")
     
     c.execute('''CREATE TABLE IF NOT EXISTS stats
                  (id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -233,8 +239,8 @@ def init_db():
                   tips TEXT)''')
 
     if not c.execute('SELECT * FROM profile').fetchone():
-        c.execute('INSERT INTO profile (nickname, motto, location) VALUES (?, ?, ?)',
-                  ('一禄', '每一次踩踏，都是向自由的靠近', '北京'))
+        c.execute('INSERT INTO profile (nickname, motto, location, avatar) VALUES (?, ?, ?, ?)',
+                  ('一禄', '每一次踩踏，都是向自由的靠近', '北京', '🚴'))
     
     if not c.execute('SELECT * FROM stats').fetchone():
         c.execute('INSERT INTO stats (total_km, total_cost, maintenance_status) VALUES (?, ?, ?)',
@@ -242,21 +248,21 @@ def init_db():
     
     if not c.execute('SELECT * FROM ride_records').fetchone():
         records = [
-            ('2026-05-04', 35.5, 22.3, '周末骑行'),
-            ('2026-05-03', 28.8, 20.1, '日常通勤'),
-            ('2026-05-02', 42.1, 24.5, '郊区骑行'),
-            ('2026-05-01', 55.0, 21.8, '假期长途'),
-            ('2026-04-30', 18.3, 19.2, '傍晚骑行'),
+            ('2026-06-15', 35.5, 22.3, '骑行第一天！'),
+            ('2026-06-14', 28.8, 20.1, '日常通勤'),
+            ('2026-06-13', 42.1, 24.5, '郊区骑行'),
+            ('2026-06-12', 55.0, 21.8, '假期长途'),
+            ('2026-06-11', 18.3, 19.2, '傍晚骑行'),
         ]
         c.executemany('INSERT INTO ride_records (date, distance, avg_speed, note) VALUES (?, ?, ?, ?)', records)
-    
+
     if not c.execute('SELECT * FROM expenses').fetchone():
         expenses = [
-            ('2026-05-04', 180, '装备', '刹车皮'),
-            ('2026-05-03', 50, '餐饮', '骑行后加餐'),
-            ('2026-05-02', 320, '装备', '新轮胎'),
-            ('2026-05-01', 150, '交通', '停车费'),
-            ('2026-04-30', 80, '餐饮', '能量补给'),
+            ('2026-06-15', 180, '装备', '刹车皮'),
+            ('2026-06-14', 50, '餐饮', '骑行后加餐'),
+            ('2026-06-13', 320, '装备', '新轮胎'),
+            ('2026-06-12', 150, '交通', '停车费'),
+            ('2026-06-11', 80, '餐饮', '能量补给'),
         ]
         c.executemany('INSERT INTO expenses (date, amount, category, description) VALUES (?, ?, ?, ?)', expenses)
     
@@ -298,8 +304,20 @@ def profile_api():
     return jsonify({
         'nickname': profile[1],
         'motto': profile[2],
-        'location': profile[3]
+        'location': profile[3],
+        'avatar': profile[4] if len(profile) > 4 else '🚴'
     })
+
+@app.route('/api/profile', methods=['PUT'])
+def update_profile():
+    data = request.get_json()
+    conn = sqlite3.connect(DATABASE)
+    c = conn.cursor()
+    c.execute('UPDATE profile SET nickname=?, motto=?, location=?, avatar=? WHERE id=1',
+              (data.get('nickname'), data.get('motto'), data.get('location'), data.get('avatar')))
+    conn.commit()
+    conn.close()
+    return jsonify({'success': True})
 
 @app.route('/api/stats')
 def stats_api():

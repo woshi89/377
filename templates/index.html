@@ -84,11 +84,27 @@
         justify-content: center;
         flex-shrink: 0;
         box-shadow: 0 4px 12px rgba(45, 90, 61, 0.2);
+        cursor: pointer;
+        position: relative;
+        transition: transform 0.2s;
+        user-select: none;
       }
+      .avatar:hover { transform: scale(1.08); }
+      .avatar:active { transform: scale(0.95); }
+      .avatar::after {
+        content: '双击更换';
+        position: absolute;
+        bottom: -18px;
+        font-size: 0.6rem;
+        color: var(--text-gray);
+        opacity: 0;
+        transition: opacity 0.2s;
+      }
+      .avatar:hover::after { opacity: 1; }
 
-      .avatar i {
-        font-size: 36px;
-        color: white;
+      .avatar-emoji {
+        font-size: 40px;
+        line-height: 1;
       }
 
       .welcome-content {
@@ -192,11 +208,6 @@
         color: var(--text-orange);
       }
 
-      /* 代办事项 */
-      .capability-section {
-        padding: 20px;
-      }
-
       .section-title {
         font-size: 1.25rem;
         font-weight: 600;
@@ -209,35 +220,6 @@
       .section-title i {
         margin-right: 8px;
         font-size: 1.1em;
-      }
-
-      .todo-list {
-        list-style: none;
-      }
-
-      .todo-item {
-        display: flex;
-        align-items: center;
-        padding: 12px 16px;
-        background: var(--light-green);
-        border-radius: 10px;
-        margin-bottom: 10px;
-        transition: all 0.3s ease;
-      }
-
-      .todo-item:hover {
-        background: var(--mint-green);
-      }
-
-      .todo-item i {
-        margin-right: 12px;
-        color: var(--secondary-green);
-        font-size: 1.1rem;
-      }
-
-      .todo-item .completed {
-        text-decoration: line-through;
-        color: var(--text-gray);
       }
 
       /* 快捷功能区 */
@@ -794,17 +776,59 @@
           margin-top: 20px;
         }
       }
+      /* 个人资料编辑弹窗 */
+      .modal-overlay {
+        display: none;
+        position: fixed; inset: 0;
+        background: rgba(0,0,0,0.5);
+        z-index: 3000;
+        align-items: center; justify-content: center;
+      }
+      .modal-overlay.show { display: flex; }
+      .modal {
+        background: #fff; border-radius: 16px;
+        padding: 28px 24px; width: 360px; max-width: 90vw;
+        box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+      }
+      .modal h3 { text-align: center; color: var(--primary-green); margin-bottom: 20px; font-size: 1.2rem; }
+      .modal .emoji-picker {
+        display: flex; flex-wrap: wrap; gap: 8px;
+        justify-content: center; margin-bottom: 16px;
+      }
+      .modal .emoji-option {
+        width: 44px; height: 44px; border-radius: 50%;
+        background: var(--light-green); border: 2px solid transparent;
+        font-size: 1.5rem; cursor: pointer;
+        display: flex; align-items: center; justify-content: center;
+        transition: all 0.2s;
+      }
+      .modal .emoji-option:hover,
+      .modal .emoji-option.selected { border-color: var(--primary-green); background: var(--mint-green); }
+      .modal input, .modal textarea {
+        width: 100%; padding: 10px 14px; border: 2px solid #e0e0e0;
+        border-radius: 10px; font-size: 0.95rem; font-family: inherit;
+        margin-bottom: 12px; outline: none;
+      }
+      .modal input:focus, .modal textarea:focus { border-color: var(--primary-green); }
+      .modal textarea { resize: none; height: 60px; }
+      .modal .btn-row { display: flex; gap: 10px; margin-top: 8px; }
+      .modal .btn {
+        flex: 1; padding: 12px; border: none; border-radius: 10px;
+        font-size: 0.95rem; font-weight: 600; cursor: pointer; font-family: inherit;
+      }
+      .modal .btn-save { background: var(--primary-green); color: #fff; }
+      .modal .btn-cancel { background: #e0e0e0; color: #666; }
     </style>
   </head>
   <body>
     <!-- 顶部欢迎区 -->
     <div class="welcome-card">
-      <div class="avatar">
-        <i class="fas fa-bicycle"></i>
+      <div class="avatar" ondblclick="openProfileEditor()" title="双击更换头像">
+        <span id="avatar-emoji" class="avatar-emoji">🚴</span>
       </div>
       <div class="welcome-content">
-        <h1>一禄的骑行日记</h1>
-        <p class="motto">每一次踩踏，都是自由的宣告。</p>
+        <h1 id="profile-name">一禄的骑行日记</h1>
+        <p class="motto" id="profile-motto">每一次踩踏，都是自由的宣告。</p>
         <div class="countdown-badge">
           <span
             >骑行第 <span class="number" id="countdown-days">18</span> 天</span
@@ -841,40 +865,6 @@
       </div>
     </div>
 
-    <!-- 代办事项 -->
-    <div class="card capability-section">
-      <h2 class="section-title">
-        <i class="fas fa-list-check"></i>
-        代办事项
-      </h2>
-      <ul class="todo-list">
-        <li class="todo-item">
-          <i class="fa-regular fa-circle"></i>
-          <span>150km拉练</span>
-        </li>
-        <li class="todo-item">
-          <i class="fa-regular fa-circle"></i>
-          <span>单日爬升1000m</span>
-        </li>
-        <li class="todo-item">
-          <i class="fa-regular fa-circle"></i>
-          <span>更换刹车皮</span>
-        </li>
-        <li class="todo-item">
-          <i class="fa-regular fa-circle"></i>
-          <span>调整变速系统</span>
-        </li>
-        <li class="todo-item">
-          <i class="fa-regular fa-circle"></i>
-          <span>制定路线计划</span>
-        </li>
-        <li class="todo-item">
-          <i class="fas fa-check-circle"></i>
-          <span class="completed">撰写骑行攻略</span>
-        </li>
-      </ul>
-    </div>
-
     <!-- 快捷功能区 -->
     <div class="card quick-features">
       <h2 class="section-title">
@@ -882,13 +872,6 @@
         快捷功能
       </h2>
       <div class="features-grid">
-        <div class="feature-card" onclick="navigateToFood()">
-          <div class="feature-icon">
-            <i class="fas fa-utensils"></i>
-          </div>
-          <div class="feature-name">食谱</div>
-          <div class="feature-desc">露营吃什么</div>
-        </div>
         <div class="feature-card" onclick="showFeature('route')">
           <div class="feature-icon">
             <i class="fas fa-route"></i>
@@ -930,17 +913,30 @@
 
 
 
+    <!-- 个人资料编辑弹窗 -->
+    <div class="modal-overlay" id="profile-modal" onclick="closeProfileEditor(event)">
+      <div class="modal" onclick="event.stopPropagation()">
+        <h3>编辑个人资料</h3>
+        <div style="text-align:center;font-size:3rem;margin-bottom:8px;" id="preview-avatar">🚴</div>
+        <p style="text-align:center;color:#999;font-size:0.8rem;margin-bottom:12px;">点击下方图标更换头像</p>
+        <div class="emoji-picker" id="emoji-picker"></div>
+        <input type="text" id="edit-nickname" placeholder="昵称">
+        <textarea id="edit-motto" placeholder="个性签名"></textarea>
+        <input type="text" id="edit-location" placeholder="所在地">
+        <div class="btn-row">
+          <button class="btn btn-cancel" onclick="closeProfileEditor()">取消</button>
+          <button class="btn btn-save" onclick="saveProfile()">保存</button>
+        </div>
+      </div>
+    </div>
+
     <!-- 底部导航栏 -->
     <div class="bottom-nav">
       <div class="nav-item active" onclick="navigateToHome()">
         <i class="fa-solid fa-bicycle"></i>
         <span>骑行</span>
       </div>
-      <div class="nav-item" onclick="navigateToFood()">
-        <i class="fa-solid fa-utensils"></i>
-        <span>美食</span>
-      </div>
-      <div class="nav-item" >
+      <div class="nav-item" onclick="openProfileEditor()">
         <i class="fa-solid fa-user"></i>
         <span>我</span>
       </div>
@@ -1016,8 +1012,63 @@
         window.location.href = "/equipment";
       }
 
-      function navigateToFood() {
-        window.location.href = "/food";
+      // ===== 个人资料编辑 =====
+      const AVATAR_OPTIONS = ['🚴','🏍️','🚵','🚲','🔥','💪','🌟','🎯','🏆','⛰️','🌲','🌿','🦅','🐎','⚡','🎪','🏕️','🗺️','🍃','💨'];
+
+      let currentProfile = { nickname: '', motto: '', location: '', avatar: '🚴' };
+
+      async function loadProfile() {
+        try {
+          const resp = await fetch('/api/profile');
+          const data = await resp.json();
+          currentProfile = data;
+          document.getElementById('avatar-emoji').textContent = data.avatar || '🚴';
+          document.getElementById('profile-name').textContent = (data.nickname || '骑行者') + '的骑行日记';
+          document.getElementById('profile-motto').textContent = data.motto || '';
+        } catch(e) { /* use defaults */ }
+      }
+
+      function openProfileEditor() {
+        buildEmojiPicker(currentProfile.avatar);
+        document.getElementById('preview-avatar').textContent = currentProfile.avatar;
+        document.getElementById('edit-nickname').value = currentProfile.nickname || '';
+        document.getElementById('edit-motto').value = currentProfile.motto || '';
+        document.getElementById('edit-location').value = currentProfile.location || '';
+        document.getElementById('profile-modal').classList.add('show');
+      }
+
+      function closeProfileEditor(e) {
+        if (e && e.target !== e.currentTarget) return;
+        document.getElementById('profile-modal').classList.remove('show');
+      }
+
+      function buildEmojiPicker(selected) {
+        const container = document.getElementById('emoji-picker');
+        container.innerHTML = AVATAR_OPTIONS.map(e =>
+          `<div class="emoji-option${e === selected ? ' selected' : ''}" onclick="selectAvatar('${e}')">${e}</div>`
+        ).join('');
+      }
+
+      function selectAvatar(emoji) {
+        currentProfile.avatar = emoji;
+        document.getElementById('preview-avatar').textContent = emoji;
+        buildEmojiPicker(emoji);
+      }
+
+      async function saveProfile() {
+        currentProfile.nickname = document.getElementById('edit-nickname').value;
+        currentProfile.motto = document.getElementById('edit-motto').value;
+        currentProfile.location = document.getElementById('edit-location').value;
+        await fetch('/api/profile', {
+          method: 'PUT',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify(currentProfile)
+        });
+        document.getElementById('avatar-emoji').textContent = currentProfile.avatar;
+        document.getElementById('profile-name').textContent = (currentProfile.nickname || '骑行者') + '的骑行日记';
+        document.getElementById('profile-motto').textContent = currentProfile.motto || '';
+        document.getElementById('profile-modal').classList.remove('show');
+        showToast('个人资料已更新');
       }
 
       function showToast(message) {
@@ -1206,6 +1257,7 @@
       }
 
       document.addEventListener("DOMContentLoaded", () => {
+        loadProfile();
         updateCountdown();
         renderStats();
         loadRideRecords();
