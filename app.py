@@ -194,12 +194,15 @@ def init_db():
                   nickname TEXT,
                   motto TEXT,
                   location TEXT,
-                  avatar TEXT DEFAULT '🚴')''')
-    # 兼容旧数据库：无 avatar 列时自动添加
+                  avatar TEXT DEFAULT '🚴',
+                  ride_start TEXT DEFAULT '2026-06-15')''')
+    # 兼容旧数据库：自动添加缺失列
     c.execute("PRAGMA table_info(profile)")
     columns = [col[1] for col in c.fetchall()]
     if 'avatar' not in columns:
         c.execute("ALTER TABLE profile ADD COLUMN avatar TEXT DEFAULT '🚴'")
+    if 'ride_start' not in columns:
+        c.execute("ALTER TABLE profile ADD COLUMN ride_start TEXT DEFAULT '2026-06-15'")
     
     c.execute('''CREATE TABLE IF NOT EXISTS stats
                  (id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -249,8 +252,8 @@ def init_db():
     if not already_seeded:
         c.execute("INSERT OR REPLACE INTO _meta (key, value) VALUES ('seeded', '1')")
 
-        c.execute('INSERT INTO profile (nickname, motto, location, avatar) VALUES (?, ?, ?, ?)',
-                  ('一禄', '每一次踩踏，都是自由的宣告。', '北京', '🚴'))
+        c.execute('INSERT INTO profile (nickname, motto, location, avatar, ride_start) VALUES (?, ?, ?, ?, ?)',
+                  ('一禄', '每一次踩踏，都是自由的宣告。', '北京', '🚴', '2026-06-15'))
 
         c.execute('INSERT INTO stats (total_km, total_cost, maintenance_status) VALUES (?, ?, ?)',
                   (468, 2680, '良好'))
@@ -291,7 +294,8 @@ def profile_api():
         'nickname': profile[1],
         'motto': profile[2],
         'location': profile[3],
-        'avatar': profile[4] if len(profile) > 4 else '🚴'
+        'avatar': profile[4] if len(profile) > 4 else '🚴',
+        'ride_start': profile[5] if len(profile) > 5 else '2026-06-15'
     })
 
 @app.route('/api/profile', methods=['PUT'])
@@ -299,8 +303,8 @@ def update_profile():
     data = request.get_json()
     conn = sqlite3.connect(DATABASE)
     c = conn.cursor()
-    c.execute('UPDATE profile SET nickname=?, motto=?, location=?, avatar=? WHERE id=1',
-              (data.get('nickname'), data.get('motto'), data.get('location'), data.get('avatar')))
+    c.execute('UPDATE profile SET nickname=?, motto=?, location=?, avatar=?, ride_start=? WHERE id=1',
+              (data.get('nickname'), data.get('motto'), data.get('location'), data.get('avatar'), data.get('ride_start')))
     conn.commit()
     conn.close()
     return jsonify({'success': True})

@@ -973,6 +973,8 @@
           <option value="保定">保定</option><option value="高碑店">高碑店</option>
           <option value="北京">北京</option>
         </select>
+        <label style="display:block;color:#666;font-size:0.85rem;margin-bottom:4px;">骑行出发日期</label>
+        <input type="date" id="edit-ride-start" style="width:100%;padding:10px 14px;border:2px solid #e0e0e0;border-radius:10px;font-size:0.95rem;font-family:inherit;margin-bottom:12px;outline:none;">
         <div class="btn-row">
           <button class="btn btn-cancel" onclick="closeProfileEditor()">取消</button>
           <button class="btn btn-save" onclick="saveProfile()">保存</button>
@@ -1027,10 +1029,8 @@
         return div.innerHTML;
       }
 
-      const rideStartDate = "2026-06-15";
-
       function updateCountdown() {
-        const start = new Date(rideStartDate);
+        const start = new Date(currentProfile.ride_start || '2026-06-15');
         const now = new Date();
         const diff = now - start;
         const days = Math.floor(diff / (1000 * 60 * 60 * 24)) + 1;
@@ -1111,6 +1111,7 @@
           renderAvatar(data.avatar);
           document.getElementById('profile-name').textContent = (data.nickname || '骑行者') + '的骑行日记';
           document.getElementById('profile-motto').textContent = data.motto || '';
+          updateCountdown();
         } catch(e) { /* use defaults */ }
       }
 
@@ -1129,6 +1130,7 @@
         document.getElementById('edit-nickname').value = currentProfile.nickname || '';
         document.getElementById('edit-motto').value = currentProfile.motto || '';
         document.getElementById('edit-location').value = currentProfile.location || '';
+        document.getElementById('edit-ride-start').value = currentProfile.ride_start || '2026-06-15';
         document.getElementById('profile-modal').classList.add('show');
       }
 
@@ -1308,6 +1310,7 @@
         currentProfile.nickname = document.getElementById('edit-nickname').value;
         currentProfile.motto = document.getElementById('edit-motto').value;
         currentProfile.location = document.getElementById('edit-location').value;
+        currentProfile.ride_start = document.getElementById('edit-ride-start').value;
         await fetch('/api/profile', {
           method: 'PUT',
           headers: {'Content-Type': 'application/json'},
@@ -1317,6 +1320,7 @@
         document.getElementById('profile-name').textContent = (currentProfile.nickname || '骑行者') + '的骑行日记';
         document.getElementById('profile-motto').textContent = currentProfile.motto || '';
         document.getElementById('profile-modal').classList.remove('show');
+        updateCountdown();
         showToast('个人资料已更新');
       }
 
