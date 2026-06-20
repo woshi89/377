@@ -801,22 +801,10 @@
       .modal {
         background: #fff; border-radius: 16px;
         padding: 28px 24px; width: 360px; max-width: 90vw;
+        max-height: 85vh; overflow-y: auto;
         box-shadow: 0 20px 60px rgba(0,0,0,0.3);
       }
       .modal h3 { text-align: center; color: var(--primary-green); margin-bottom: 20px; font-size: 1.2rem; }
-      .modal .emoji-picker {
-        display: flex; flex-wrap: wrap; gap: 8px;
-        justify-content: center; margin-bottom: 16px;
-      }
-      .modal .emoji-option {
-        width: 44px; height: 44px; border-radius: 50%;
-        background: var(--light-green); border: 2px solid transparent;
-        font-size: 1.5rem; cursor: pointer;
-        display: flex; align-items: center; justify-content: center;
-        transition: all 0.2s;
-      }
-      .modal .emoji-option:hover,
-      .modal .emoji-option.selected { border-color: var(--primary-green); background: var(--mint-green); }
       .modal input, .modal textarea {
         width: 100%; padding: 10px 14px; border: 2px solid #e0e0e0;
         border-radius: 10px; font-size: 0.95rem; font-family: inherit;
@@ -859,8 +847,8 @@
         <span id="avatar-emoji" class="avatar-emoji"></span>
       </div>
       <div class="welcome-content">
-        <h1 id="profile-name">一禄的骑行日记</h1>
-        <p class="motto" id="profile-motto">每一次踩踏，都是自由的宣告。</p>
+        <h1 id="profile-name">执着阿七  <span style="opacity: 0.5; font-weight: 400;">骑行日记</span></h1>
+        <p class="motto" id="profile-motto">路虽远，行则必至。我喜欢的"执着"的活着。</p>
         <div class="countdown-badge">
           <span
             >骑行第 <span class="number" id="countdown-days">18</span> 天</span
@@ -872,19 +860,19 @@
     <!-- 数据统计卡片 -->
     <div class="stats-grid">
       <div class="stat-card clickable" onclick="navigateToStats()">
-        <div class="stat-value" id="total-km">468</div>
+        <div class="stat-value" id="total-km">0</div>
         <div class="stat-label">总里程 (km)</div>
         <div class="stat-source">数据来自数据库</div>
         <i class="fas fa-arrow-right stat-arrow"></i>
       </div>
       <div class="stat-card clickable" onclick="navigateToMap()">
-        <div class="stat-value" id="location">北京</div>
+        <div class="stat-value" id="location">永川</div>
         <div class="stat-label">所在地点</div>
         <div class="stat-source">数据来自数据库</div>
         <i class="fas fa-arrow-right stat-arrow"></i>
       </div>
       <div class="stat-card clickable" onclick="navigateToExpense()">
-        <div class="stat-value" id="total-cost">¥2,680</div>
+        <div class="stat-value" id="total-cost">¥0</div>
         <div class="stat-label">所花金额</div>
         <div class="stat-source">数据来自数据库</div>
         <i class="fas fa-arrow-right stat-arrow"></i>
@@ -943,9 +931,8 @@
         <h3>编辑个人资料</h3>
         <div style="text-align:center;font-size:3rem;margin-bottom:8px;" id="preview-avatar">🚴</div>
         <p style="text-align:center;color:#999;font-size:0.8rem;margin-bottom:12px;">
-          选择 emoji 或上传本地图片
+          上传本地图片更换头像
         </p>
-        <div class="emoji-picker" id="emoji-picker"></div>
         <label for="avatar-file" style="display:block;text-align:center;padding:10px;border:2px dashed #ccc;border-radius:10px;cursor:pointer;margin-bottom:12px;color:#999;font-size:0.85rem;transition:border-color 0.2s;" onmouseover="this.style.borderColor='var(--primary-green)'" onmouseout="this.style.borderColor='#ccc'" id="upload-label">
           📁 点击上传本地图片
         </label>
@@ -1053,14 +1040,15 @@
 
           document.getElementById("total-km").textContent = totalKm;
           document.getElementById("total-cost").textContent = '¥' + totalCost.toLocaleString();
-          document.getElementById("location").textContent = profile.location || '北京';
+          document.getElementById("location").textContent = profile.location || '永川';
         } catch(e) {
-          document.getElementById("total-km").textContent = '--';
-          document.getElementById("total-cost").textContent = '--';
+          document.getElementById("total-km").textContent = '0';
+          document.getElementById("total-cost").textContent = '¥0';
+          document.getElementById("location").textContent = '永川';
         }
         const r = Math.random();
         document.getElementById("maintenance-status").textContent =
-          r < 0.6 ? '暂无维修' : (Math.floor(Math.random() * 3) + 1) + '项待修';
+          r < 0.7 ? '暂无维修' : (Math.floor(Math.random() * 3) + 1) + '项待修';
       }
 
       function navigateTo(url) {
@@ -1088,8 +1076,6 @@
       }
 
       // ===== 个人资料编辑 =====
-      const AVATAR_OPTIONS = ['🚴','🏍️','🚵','🚲','🔥','💪','🌟','🎯','🏆','⛰️','🌲','🌿','🦅','🐎','⚡','🎪','🏕️','🗺️','🍃','💨'];
-
       let currentProfile = { nickname: '', motto: '', location: '', avatar: '🚴' };
 
       function renderAvatar(avatarData) {
@@ -1109,14 +1095,11 @@
           const data = await resp.json();
           currentProfile = data;
           renderAvatar(data.avatar);
-          document.getElementById('profile-name').textContent = (data.nickname || '骑行者') + '的骑行日记';
-          document.getElementById('profile-motto').textContent = data.motto || '';
           updateCountdown();
         } catch(e) { /* use defaults */ }
       }
 
       function openProfileEditor() {
-        buildEmojiPicker(currentProfile.avatar && !currentProfile.avatar.startsWith('data:') ? currentProfile.avatar : '');
         const preview = document.getElementById('preview-avatar');
         if (currentProfile.avatar && currentProfile.avatar.startsWith('data:image')) {
           preview.textContent = '';
@@ -1137,22 +1120,6 @@
       function closeProfileEditor(e) {
         if (e && e.target !== e.currentTarget) return;
         document.getElementById('profile-modal').classList.remove('show');
-      }
-
-      function buildEmojiPicker(selected) {
-        const container = document.getElementById('emoji-picker');
-        container.innerHTML = AVATAR_OPTIONS.map(e =>
-          `<div class="emoji-option${e === selected ? ' selected' : ''}" onclick="selectAvatar('${e}')">${e}</div>`
-        ).join('');
-      }
-
-      function selectAvatar(emoji) {
-        currentProfile.avatar = emoji;
-        const preview = document.getElementById('preview-avatar');
-        preview.innerHTML = '';
-        preview.textContent = emoji;
-        preview.style.fontSize = '3rem';
-        buildEmojiPicker(emoji);
       }
 
       // ===== 头像裁剪 =====
@@ -1254,7 +1221,6 @@
             preview.textContent = currentProfile.avatar;
             preview.style.fontSize = '40px';
           }
-          buildEmojiPicker('');
           showToast('头像更新成功');
         } else {
           showToast(result.error || '上传失败');
@@ -1317,8 +1283,6 @@
           body: JSON.stringify(currentProfile)
         });
         renderAvatar(currentProfile.avatar);
-        document.getElementById('profile-name').textContent = (currentProfile.nickname || '骑行者') + '的骑行日记';
-        document.getElementById('profile-motto').textContent = currentProfile.motto || '';
         document.getElementById('profile-modal').classList.remove('show');
         updateCountdown();
         showToast('个人资料已更新');
